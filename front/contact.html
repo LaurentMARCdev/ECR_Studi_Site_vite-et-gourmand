@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact – Vite & Gourmand</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nuit:    '#1A1208',
+            creme:   '#F5F0E8',
+            rouille: '#D4521A',
+            herbe:   '#4A7C59',
+            safran:  '#F0C060',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            body:    ['Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background-color: #F5F0E8; color: #1A1208; }
+  </style>
+</head>
+<body class="bg-creme text-nuit">
+
+  <!-- ═══════════════════ NAVIGATION ═══════════════════ -->
+  <nav class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="index.html" class="font-display text-2xl font-bold text-nuit">
+        Vite <span class="text-rouille">&amp;</span> Gourmand
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium">
+        <a href="index.html" class="hover:text-rouille transition">Accueil</a>
+        <a href="menus.html" class="hover:text-rouille transition">Menus</a>
+        <a href="contact.html" class="text-rouille font-semibold">Contact</a>
+      </div>
+      <a href="connexion.html" class="bg-rouille text-white text-sm font-semibold px-5 py-2 rounded hover:bg-nuit transition">
+        Connexion
+      </a>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════ HERO ═══════════════════ -->
+  <section class="bg-nuit text-creme py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <h1 class="font-display text-4xl md:text-6xl font-bold mb-4">
+        Prenons contact
+      </h1>
+      <p class="text-lg text-creme/80 max-w-2xl mx-auto">
+        Un événement à célébrer ? Une question sur nos menus ? Julie et José vous répondent sous 24h.
+      </p>
+      <div class="mt-6 inline-block border-t border-safran pt-4">
+        <span class="text-safran text-sm uppercase tracking-widest">Traiteur artisanal · Bordeaux</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ CONTENU PRINCIPAL ═══════════════════ -->
+  <section class="py-16 md:py-20">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid md:grid-cols-2 gap-12">
+
+        <!-- ═══════════════════ FORMULAIRE ═══════════════════ -->
+        <div x-data="contactForm()">
+          <h2 class="font-display text-3xl text-nuit mb-2">Écrivez-nous</h2>
+          <div class="w-16 h-1 bg-rouille mb-6"></div>
+
+          <div x-show="succes" x-cloak class="bg-herbe/10 border-l-4 border-herbe p-4 rounded mb-6">
+            <p class="font-semibold text-herbe">Message envoyé !</p>
+            <p class="text-sm text-nuit/80 mt-1">Nous vous répondrons dans les plus brefs délais.</p>
+          </div>
+
+          <div x-show="erreur" x-cloak class="bg-red-100 border-l-4 border-red-500 p-4 rounded mb-6">
+            <p class="font-semibold text-red-700">Une erreur est survenue</p>
+            <p class="text-sm text-nuit/80 mt-1" x-text="erreur"></p>
+          </div>
+
+          <form @submit.prevent="envoyer" class="space-y-5" x-show="!succes">
+
+            <div>
+              <label class="block text-sm font-semibold text-nuit mb-1">Adresse e-mail <span class="text-rouille">*</span></label>
+              <input type="email" x-model="form.email" required maxlength="180"
+                     class="w-full px-4 py-2 bg-white border border-gray-300 rounded focus:outline-none focus:border-rouille" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-nuit mb-1">Objet du message <span class="text-rouille">*</span></label>
+              <input type="text" x-model="form.titre" required minlength="5" maxlength="200"
+                     placeholder="Ex : Demande de devis pour un cocktail dinatoire"
+                     class="w-full px-4 py-2 bg-white border border-gray-300 rounded focus:outline-none focus:border-rouille" />
+              <p class="text-xs text-nuit/60 mt-1">Entre 5 et 200 caractères</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-nuit mb-1">Votre message <span class="text-rouille">*</span></label>
+              <textarea x-model="form.description" required minlength="20" maxlength="2000" rows="7"
+                        placeholder="Décrivez votre événement, vos attentes, le nombre de convives..."
+                        class="w-full px-4 py-2 bg-white border border-gray-300 rounded focus:outline-none focus:border-rouille"></textarea>
+              <p class="text-xs text-nuit/60 mt-1"><span x-text="form.description.length"></span> / 2000 caractères (minimum 20)</p>
+            </div>
+
+            <button type="submit" :disabled="envoi"
+                    class="bg-rouille text-white font-semibold px-8 py-3 rounded hover:bg-nuit transition disabled:opacity-50 disabled:cursor-not-allowed">
+              <span x-show="!envoi">Envoyer le message</span>
+              <span x-show="envoi">Envoi en cours…</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- ═══════════════════ INFOS PRATIQUES ═══════════════════ -->
+        <div>
+          <h2 class="font-display text-3xl text-nuit mb-2">Nous trouver</h2>
+          <div class="w-16 h-1 bg-rouille mb-6"></div>
+
+          <div class="bg-white rounded-lg p-6 shadow-sm space-y-6">
+            <div class="flex gap-4">
+              <div class="w-10 h-10 rounded-full bg-rouille/10 flex items-center justify-center flex-shrink-0">
+                <span class="text-rouille font-bold">◉</span>
+              </div>
+              <div>
+                <h3 class="font-semibold text-nuit">Adresse</h3>
+                <p class="text-sm text-nuit/70 mt-1">12 rue des Faures<br>33000 Bordeaux</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-10 h-10 rounded-full bg-rouille/10 flex items-center justify-center flex-shrink-0">
+                <span class="text-rouille font-bold">☎</span>
+              </div>
+              <div>
+                <h3 class="font-semibold text-nuit">Téléphone</h3>
+                <p class="text-sm text-nuit/70 mt-1">05 56 00 00 00</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-10 h-10 rounded-full bg-rouille/10 flex items-center justify-center flex-shrink-0">
+                <span class="text-rouille font-bold">✉</span>
+              </div>
+              <div>
+                <h3 class="font-semibold text-nuit">E-mail</h3>
+                <p class="text-sm text-nuit/70 mt-1">contact@vitegourmand.fr</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══════════════════ HORAIRES DYNAMIQUES ═══════════════════ -->
+          <div class="bg-nuit text-creme rounded-lg p-6 mt-6" x-data="horaires()" x-init="charger()">
+            <h3 class="font-display text-xl text-safran mb-4">Nos horaires d'ouverture</h3>
+            <div x-show="chargement" class="text-sm text-creme/60">Chargement…</div>
+            <div x-show="!chargement && liste.length > 0" class="space-y-2 text-sm">
+              <template x-for="h in liste" :key="h.jour">
+                <div class="flex justify-between border-b border-creme/10 pb-2">
+                  <span x-text="nomJour(h.jour)" class="capitalize"></span>
+                  <span x-text="afficherHoraire(h)" class="text-safran/90 font-medium"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ FOOTER ═══════════════════ -->
+  <footer class="bg-nuit text-creme py-8">
+    <div class="max-w-7xl mx-auto px-6 text-center">
+      <p class="font-display text-xl mb-2">Vite <span class="text-rouille">&amp;</span> Gourmand</p>
+      <p class="text-sm text-creme/60">© 2026 · Traiteur artisanal · Bordeaux · Tous droits réservés</p>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════ SCRIPTS ALPINE ═══════════════════ -->
+  <script>
+    const API_BASE = '/api';
+
+    function contactForm() {
+      return {
+        form: { titre: '', email: '', description: '' },
+        envoi: false,
+        succes: false,
+        erreur: null,
+        async envoyer() {
+          this.envoi = true;
+          this.erreur = null;
+          try {
+            const res = await fetch(`${API_BASE}/contact`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify(this.form),
+            });
+            if (!res.ok) {
+              const data = await res.json().catch(() => ({}));
+              let msg = data.erreur || data.message || `Erreur ${res.status}`;
+              if (data.details && typeof data.details === 'object') {
+                msg = Object.values(data.details).join(' — ');
+              }
+              throw new Error(msg);
+            }
+            this.succes = true;
+          } catch (e) {
+            this.erreur = e.message || 'Impossible d\'envoyer le message. Réessayez plus tard.';
+          } finally {
+            this.envoi = false;
+          }
+        },
+      };
+    }
+
+    function horaires() {
+      const NOMS_JOURS = {
+        1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi',
+        5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche',
+        LUNDI: 'Lundi', MARDI: 'Mardi', MERCREDI: 'Mercredi', JEUDI: 'Jeudi',
+        VENDREDI: 'Vendredi', SAMEDI: 'Samedi', DIMANCHE: 'Dimanche',
+      };
+      return {
+        liste: [],
+        chargement: true,
+        async charger() {
+          try {
+            const res = await fetch(`${API_BASE}/horaires`, { headers: { 'Accept': 'application/json' } });
+            if (res.ok) this.liste = await res.json();
+          } catch (e) {}
+          this.chargement = false;
+        },
+        nomJour(j) { return NOMS_JOURS[j] || j; },
+        afficherHoraire(h) {
+          const ferme = h.ferme || h.estFerme || (h.ouverture === null);
+          if (ferme) return 'Fermé';
+          const ouv = h.heure_ouverture || h.ouverture || h.heureOuverture;
+          const fer = h.heure_fermeture || h.fermeture || h.heureFermeture;
+          if (ouv && fer) return `${ouv.slice(0,5)} – ${fer.slice(0,5)}`;
+          return '—';
+        },
+      };
+    }
+  </script>
+
+</body>
+</html>
