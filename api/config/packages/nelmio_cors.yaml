@@ -1,0 +1,13 @@
+nelmio_cors:
+    defaults:
+        # Autorise les requêtes du front (dev server, prod domain)
+        origin_regex: true
+        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+        allow_methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+        allow_headers: ['Content-Type', 'Accept', 'Authorization', 'X-Requested-With']
+        expose_headers: ['Link']
+        # CRUCIAL : autorise l'envoi du cookie de session
+        allow_credentials: true
+        max_age: 3600
+    paths:
+        '^/api/': ~

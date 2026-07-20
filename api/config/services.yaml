@@ -1,0 +1,39 @@
+parameters:
+    mailer_from_address:  '%env(MAILER_FROM_ADDRESS)%'
+    mailer_from_name:     '%env(MAILER_FROM_NAME)%'
+    frontend_url:         '%env(FRONTEND_URL)%'
+    contact_email:        '%env(CONTACT_EMAIL)%'
+    mongo_url:            '%env(MONGODB_URL)%'
+    mongo_db:             '%env(MONGODB_DB)%'
+
+services:
+    _defaults:
+        autowire:      true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    # Ces services ont besoin des paramètres du .env
+    App\Service\MailerService:
+        arguments:
+            $fromAddress: '%mailer_from_address%'
+            $fromName:    '%mailer_from_name%'
+            $frontendUrl: '%frontend_url%'
+            $contactEmail: '%contact_email%'
+
+    # Connexion NoSQL — MongoDB (statistiques admin)
+    App\Service\Mongo\MongoConnection:
+        arguments:
+            $mongoUrl: '%mongo_url%'
+            $mongoDb:  '%mongo_db%'
+
+    # Alias : l'implémentation stub sert de calculateur de distance par défaut.
+    # En production, remplacer par une implémentation qui appelle une API réelle
+    # (api-adresse.data.gouv.fr, Google Distance Matrix, etc.)
+    App\Service\Livraison\DistanceCalculatorInterface:
+        alias: App\Service\Livraison\DistanceCalculatorStub

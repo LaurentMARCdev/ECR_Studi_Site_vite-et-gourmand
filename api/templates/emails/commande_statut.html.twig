@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mise à jour de votre commande</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#F5F0E8; margin:0; padding:40px 20px;">
+    <table role="presentation" style="max-width:560px; margin:0 auto; background:white; border-radius:4px; padding:40px;">
+        <tr>
+            <td style="text-align:center; padding-bottom:24px; border-bottom:1px solid #eee;">
+                <h1 style="font-family:Georgia, serif; color:#1A1208; font-size:28px; margin:0;">
+                    Vite <span style="color:#D4521A;">&</span> Gourmand
+                </h1>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="padding:32px 0 16px;">
+                <h2 style="font-family:Georgia, serif; color:#1A1208; font-size:22px; margin:0 0 12px;">Bonjour {{ prenom }},</h2>
+                <p style="color:#555; line-height:1.6; font-size:15px; margin:0;">
+                    Le statut de votre commande <strong>{{ commande.numeroCommande }}</strong> vient d'évoluer.
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="padding:16px 0;">
+                {% set statut = commande.statut.value %}
+                {% set couleurFond = '#FEF3C7' %}
+                {% set couleurTexte = '#92400E' %}
+                {% if statut == 'accepte' %}
+                    {% set couleurFond = '#DBEAFE' %}
+                    {% set couleurTexte = '#1E40AF' %}
+                {% elseif statut == 'annulee' %}
+                    {% set couleurFond = '#FEE2E2' %}
+                    {% set couleurTexte = '#991B1B' %}
+                {% endif %}
+                <div style="background:{{ couleurFond }}; padding:20px; border-radius:2px; text-align:center;">
+                    <p style="color:{{ couleurTexte }}; font-size:12px; text-transform:uppercase; font-weight:600; letter-spacing:0.1em; margin:0 0 6px;">
+                        Nouveau statut
+                    </p>
+                    <p style="color:{{ couleurTexte }}; font-size:22px; font-weight:700; margin:0;">
+                        {{ commande.statut.label }}
+                    </p>
+                </div>
+            </td>
+        </tr>
+
+        {% if commande.statut.value == 'accepte' %}
+        <tr>
+            <td style="padding:16px 0; color:#555; font-size:15px; line-height:1.6;">
+                <p style="margin:0;">
+                    Excellente nouvelle : votre commande a été acceptée !
+                    Nous préparons dès à présent votre menu pour le
+                    <strong>{{ commande.datePrestation|date('d/m/Y') }}</strong>
+                    à <strong>{{ commande.heureLivraison|date('H:i') }}</strong>.
+                </p>
+            </td>
+        </tr>
+        {% elseif commande.statut.value == 'annulee' %}
+        <tr>
+            <td style="padding:16px 0; color:#555; font-size:15px; line-height:1.6;">
+                <p style="margin:0 0 12px;">
+                    Votre commande a été annulée. Toutes nos excuses pour la gêne occasionnée.
+                </p>
+                {% if commande.motifAnnulation %}
+                <div style="background:#FEF2F2; padding:14px; border-radius:2px; border-left:3px solid #991B1B;">
+                    <p style="color:#666; font-size:12px; text-transform:uppercase; font-weight:600; margin:0 0 4px;">Motif</p>
+                    <p style="color:#1A1208; font-size:14px; margin:0;">{{ commande.motifAnnulation }}</p>
+                </div>
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
+
+        <tr>
+            <td style="text-align:center; padding:24px 0;">
+                <a href="{{ frontendUrl }}/mon-espace"
+                   style="display:inline-block; background:#D4521A; color:white; padding:12px 28px;
+                          text-decoration:none; font-weight:600; border-radius:2px; font-size:14px;">
+                    Voir ma commande
+                </a>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="padding-top:24px; border-top:1px solid #eee; text-align:center; color:#aaa; font-size:12px;">
+                Vite & Gourmand — Traiteur artisanal à Bordeaux
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

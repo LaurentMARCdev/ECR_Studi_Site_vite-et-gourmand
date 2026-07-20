@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Votre compte employé</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#F5F0E8; margin:0; padding:40px 20px;">
+    <table role="presentation" style="max-width:560px; margin:0 auto; background:white; border-radius:4px; padding:40px;">
+        <tr>
+            <td style="text-align:center; padding-bottom:24px; border-bottom:1px solid #eee;">
+                <h1 style="font-family:Georgia, serif; color:#1A1208; font-size:28px; margin:0;">
+                    Vite <span style="color:#D4521A;">&</span> Gourmand
+                </h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:32px 0;">
+                <h2 style="font-family:Georgia, serif; color:#1A1208; font-size:22px;">Bonjour {{ prenom }},</h2>
+                <p style="color:#555; line-height:1.6; font-size:15px;">
+                    Un compte employé a été créé pour vous sur l'application Vite & Gourmand.
+                    Pour des raisons de sécurité, votre mot de passe ne vous est pas transmis par e-mail.
+                </p>
+                <div style="background:#fff8f5; border-left:4px solid #D4521A; padding:16px; margin:24px 0;">
+                    <p style="margin:0; color:#1A1208; font-weight:600;">Étape suivante :</p>
+                    <p style="margin:8px 0 0; color:#555; font-size:14px;">
+                        Contactez votre administrateur pour obtenir votre mot de passe de connexion.
+                    </p>
+                </div>
+                <div style="text-align:center; padding:24px 0;">
+                    <a href="{{ frontendUrl }}/connexion"
+                       style="display:inline-block; background:#D4521A; color:white; padding:14px 32px;
+                              text-decoration:none; font-weight:600; border-radius:2px;">
+                        Accéder à la connexion
+                    </a>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding-top:24px; border-top:1px solid #eee; text-align:center; color:#aaa; font-size:12px;">
+                Vite & Gourmand — Traiteur artisanal à Bordeaux
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

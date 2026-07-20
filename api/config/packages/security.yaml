@@ -1,0 +1,90 @@
+security:
+    # ═══════════════════════════════════════════════════════════
+    # Hachage des mots de passe
+    # ═══════════════════════════════════════════════════════════
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+            # Argon2id : algorithme moderne recommandé par l'ANSSI
+            algorithm: 'auto'
+            cost:      12
+
+    # ═══════════════════════════════════════════════════════════
+    # Provider — comment charger un utilisateur depuis la BDD
+    # ═══════════════════════════════════════════════════════════
+    providers:
+        app_user_provider:
+            entity:
+                class:    App\Entity\Utilisateur
+                property: email
+
+    # ═══════════════════════════════════════════════════════════
+    # Hiérarchie des rôles
+    # (l'admin peut faire tout ce qu'un employé fait)
+    # ═══════════════════════════════════════════════════════════
+    role_hierarchy:
+        ROLE_EMPLOYE:        ROLE_UTILISATEUR
+        ROLE_ADMINISTRATEUR: ROLE_EMPLOYE
+
+    # ═══════════════════════════════════════════════════════════
+    # Firewalls
+    # ═══════════════════════════════════════════════════════════
+    firewalls:
+        # Dev-only (profiler, wdt)
+        dev:
+            pattern:  ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        # API — authentification par session (cookie HttpOnly)
+        main:
+            lazy: true
+            provider: app_user_provider
+
+            # Custom authenticator : accepte JSON { email, motDePasse }
+            custom_authenticators:
+                - App\Security\JsonLoginAuthenticator
+
+            # Logout
+            logout:
+                path: /api/auth/logout
+                target: /
+                # Invalide la session complète (sécurité)
+                invalidate_session: true
+
+            # Login throttling — 5 tentatives / minute / IP
+            login_throttling:
+                max_attempts: 5
+                interval: '1 minute'
+
+    # ═══════════════════════════════════════════════════════════
+    # Contrôle d'accès par URL
+    # ═══════════════════════════════════════════════════════════
+    access_control:
+        # Endpoints publics (pas d'auth requise)
+        - { path: ^/api/auth/inscription,        roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/login,              roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/mot-de-passe-oublie,roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/reinitialiser,      roles: PUBLIC_ACCESS }
+        - { path: ^/api/menus,                   roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: ^/api/referentiels,            roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: ^/api/avis$,                   roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: ^/api/horaires,                roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: ^/api/contact,                 roles: PUBLIC_ACCESS, methods: [POST] }
+
+        # Auth requise
+        - { path: ^/api/auth/me,                 roles: ROLE_UTILISATEUR }
+        - { path: ^/api/utilisateurs,            roles: ROLE_UTILISATEUR }
+        - { path: ^/api/commandes,               roles: ROLE_UTILISATEUR }
+
+        # Espaces réservés aux rôles
+        - { path: ^/api/employe,                 roles: ROLE_EMPLOYE }
+        - { path: ^/api/admin,                   roles: ROLE_ADMINISTRATEUR }
+
+when@test:
+    security:
+        password_hashers:
+            # Pour accélérer les tests
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost:      4
+                time_cost: 3
+                memory_cost: 10

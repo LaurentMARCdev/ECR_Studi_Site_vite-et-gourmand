@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Espace employé – Vite & Gourmand</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nuit:    '#1A1208',
+            creme:   '#F5F0E8',
+            rouille: '#D4521A',
+            herbe:   '#4A7C59',
+            safran:  '#F0C060',
+            foret:   '#1C2B1A',   // sidebar employé — vert forêt très sombre
+            foretHover: '#253524',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            body:    ['Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: #F3F4F6; color: #1A1208; }
+
+    /* ── Sidebar employé ──────────────────────── */
+    .sidebar { width:240px; min-height:100vh; background:#1C2B1A; flex-shrink:0; }
+    .s-item  { display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:4px; font-size:.875rem; font-weight:500; color:rgba(255,255,255,.6); transition:all .15s; cursor:pointer; width:100%; text-align:left; border:none; background:none; }
+    .s-item:hover  { background:#253524; color:white; }
+    .s-item.active { background:#F0C060; color:#1A1208; font-weight:700; }
+    .s-item.active svg { color:#1A1208; }
+
+    /* ── Kanban ───────────────────────────────── */
+    .kanban-col  { min-width:260px; flex-shrink:0; }
+    .kanban-card { background:white; border-radius:4px; border:1px solid #E5E7EB; transition:box-shadow .15s, transform .15s; cursor:default; }
+    .kanban-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.08); transform:translateY(-1px); }
+    .kanban-col-header { border-radius:4px 4px 0 0; padding:10px 14px; font-weight:700; font-size:.8rem; letter-spacing:.05em; text-transform:uppercase; }
+
+    /* ── Table ────────────────────────────────── */
+    .tbl-head th { background:#F9FAFB; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#6B7280; padding:10px 16px; border-bottom:1px solid #E5E7EB; }
+    .tbl-row  td { padding:12px 16px; font-size:.875rem; border-bottom:1px solid #F3F4F6; vertical-align:middle; }
+    .tbl-row:hover td { background:#FAFAF9; }
+    .tbl-row:last-child td { border-bottom:none; }
+
+    /* ── Badges ───────────────────────────────── */
+    .badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:999px; font-size:.7rem; font-weight:700; }
+    .badge-en_attente        { background:#FEF3C7; color:#92400E; }
+    .badge-accepte           { background:#DBEAFE; color:#1E40AF; }
+    .badge-en_preparation    { background:#FCE7F3; color:#9D174D; }
+    .badge-en_cours_livraison{ background:#EDE9FE; color:#5B21B6; }
+    .badge-livre             { background:#DCFCE7; color:#166534; }
+    .badge-attente_materiel  { background:#FFEDD5; color:#C2410C; }
+    .badge-terminee          { background:#F0FDF4; color:#15803D; border:1px solid #BBF7D0; }
+    .badge-annulee           { background:#FEE2E2; color:#991B1B; }
+
+    /* ── Field ────────────────────────────────── */
+    .field { width:100%; border:1px solid #D1D5DB; border-radius:4px; padding:9px 13px; font-size:.875rem; background:white; transition:all .15s; }
+    .field:focus { outline:none; box-shadow:0 0 0 2px #F0C06040; border-color:#F0C060; }
+    .field.err { border-color:#DC2626; }
+
+    /* ── Spinner ──────────────────────────────── */
+    .spin { width:14px; height:14px; border:2px solid rgba(0,0,0,.2); border-top-color:#1A1208; border-radius:50%; animation:spinning .7s linear infinite; display:inline-block; }
+    @keyframes spinning { to{transform:rotate(360deg)} }
+
+    /* ── Toast ────────────────────────────────── */
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1C2B1A; color:white; padding:11px 22px; border-radius:4px; font-size:.8rem; font-weight:500; z-index:9999; white-space:nowrap; animation:tin .3s ease, tout .3s ease 2.7s forwards; }
+    @keyframes tin  { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+    @keyframes tout { from{opacity:1} to{opacity:0} }
+
+    /* ── Modale ───────────────────────────────── */
+    .modale-bg { background:rgba(28,43,26,.55); backdrop-filter:blur(4px); }
+
+    /* ── Kanban scrollbar ─────────────────────── */
+    .kanban-scroll { overflow-x:auto; padding-bottom:16px; }
+    .kanban-scroll::-webkit-scrollbar { height:6px; }
+    .kanban-scroll::-webkit-scrollbar-track { background:#F3F4F6; border-radius:3px; }
+    .kanban-scroll::-webkit-scrollbar-thumb { background:#D1D5DB; border-radius:3px; }
+
+    /* ── Filtre view toggle ───────────────────── */
+    .view-btn     { padding:6px 14px; border-radius:4px; font-size:.8rem; font-weight:600; transition:all .15s; border:1px solid #E5E7EB; }
+    .view-btn.on  { background:#1C2B1A; color:white; border-color:#1C2B1A; }
+    .view-btn.off { background:white; color:#6B7280; }
+  </style>
+</head>
+
+<body x-data="employeApp()" x-init="init()" class="flex">
+
+  <!-- ══════════════════════════════════════
+       SIDEBAR EMPLOYÉ
+  ═══════════════════════════════════════ -->
+  <aside class="sidebar fixed top-0 left-0 h-screen flex flex-col z-40 overflow-y-auto" role="navigation" aria-label="Navigation espace employé">
+
+    <!-- Logo -->
+    <div class="px-5 py-6 border-b border-white/10">
+      <p class="font-display text-lg font-bold text-white leading-tight">
+        Vite <span class="text-safran">&</span> Gourmand
+      </p>
+      <p class="text-xs text-white/30 mt-0.5 font-semibold tracking-widest uppercase">Espace employé</p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 p-3 space-y-1 mt-2">
+      <button @click="section='commandes'" :class="section==='commandes'?'active':''" class="s-item" :aria-current="section==='commandes'?'page':'false'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Commandes
+        <span x-show="nbEnAttente > 0"
+              :class="section==='commandes' ? 'bg-nuit text-white' : 'bg-safran text-nuit'"
+              class="ml-auto text-xs font-bold px-1.5 py-0.5 rounded-full"
+              x-text="nbEnAttente"></span>
+      </button>
+
+      <button @click="section='menus'" :class="section==='menus'?'active':''" class="s-item" :aria-current="section==='menus'?'page':'false'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        Menus & plats
+      </button>
+
+      <button @click="section='horaires'" :class="section==='horaires'?'active':''" class="s-item" :aria-current="section==='horaires'?'page':'false'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Horaires
+      </button>
+
+      <button @click="section='avis'" :class="section==='avis'?'active':''" class="s-item" :aria-current="section==='avis'?'page':'false'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+        Avis clients
+        <span x-show="avisEnAttente.length > 0"
+              :class="section==='avis' ? 'bg-nuit text-white' : 'bg-safran text-nuit'"
+              class="ml-auto text-xs font-bold px-1.5 py-0.5 rounded-full"
+              x-text="avisEnAttente.length"></span>
+      </button>
+    </nav>
+
+    <!-- Bas sidebar -->
+    <div class="p-3 border-t border-white/10 space-y-1">
+      <div class="px-4 py-3">
+        <p class="text-xs text-white/40 uppercase tracking-widest font-semibold mb-0.5">Connecté en tant que</p>
+        <p class="text-sm text-white font-semibold" x-text="employe?.prenom + ' ' + employe?.nom"></p>
+      </div>
+      <a href="/" class="s-item">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        Voir le site
+      </a>
+      <button @click="seDeconnecter()" class="s-item" style="color:rgba(252,165,165,.8)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════
+       ZONE PRINCIPALE
+  ═══════════════════════════════════════ -->
+  <div class="flex-1 ml-60 min-h-screen flex flex-col">
+
+    <!-- Top bar -->
+    <div class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between sticky top-0 z-30">
+      <div>
+        <h1 class="font-display text-xl font-bold text-nuit"
+            x-text="{ commandes:'Commandes', menus:'Menus & plats', horaires:'Horaires', avis:'Avis clients' }[section]"></h1>
+        <p class="text-xs text-gray-400 mt-0.5" x-text="dateAujourdhui()"></p>
+      </div>
+      <!-- Compteur en-tête -->
+      <div x-show="section==='commandes'" class="flex items-center gap-4 text-sm">
+        <div class="text-center">
+          <p class="font-bold text-lg text-nuit" x-text="nbEnAttente"></p>
+          <p class="text-xs text-gray-400">en attente</p>
+        </div>
+        <div class="w-px h-8 bg-gray-200" aria-hidden="true"></div>
+        <div class="text-center">
+          <p class="font-bold text-lg text-purple-600" x-text="commandes.filter(c=>c.statut==='en_preparation').length"></p>
+          <p class="text-xs text-gray-400">en cuisine</p>
+        </div>
+        <div class="w-px h-8 bg-gray-200" aria-hidden="true"></div>
+        <div class="text-center">
+          <p class="font-bold text-lg text-herbe" x-text="commandes.filter(c=>c.statut==='en_cours_livraison').length"></p>
+          <p class="text-xs text-gray-400">en livraison</p>
+        </div>
+      </div>
+    </div>
+
+    <main class="flex-1 p-8" id="main-content">
+
+      <!-- ═══════════════════════════════════
+           SECTION COMMANDES
+      ════════════════════════════════════ -->
+      <div x-show="section==='commandes'" role="region" aria-label="Gestion des commandes">
+
+        <!-- Barre filtres + toggle vue -->
+        <div class="bg-white rounded border border-gray-200 p-4 mb-4 flex flex-wrap gap-3 items-end">
+          <!-- Filtre statut -->
+          <div>
+            <label for="f-statut" class="text-xs text-gray-400 font-semibold uppercase tracking-wide block mb-1">Statut</label>
+            <select id="f-statut" x-model="filtreCmd.statut" @change="filtrerCommandes()" class="field text-sm py-2 w-44">
+              <option value="">Tous les statuts</option>
+              <template x-for="s in statutsDisponibles" :key="s.val">
+                <option :value="s.val" x-text="s.label"></option>
+              </template>
+            </select>
+          </div>
+          <!-- Filtre client -->
+          <div class="flex-1 min-w-[160px]">
+            <label for="f-client" class="text-xs text-gray-400 font-semibold uppercase tracking-wide block mb-1">Client</label>
+            <input id="f-client" type="text" placeholder="Nom ou e-mail…"
+                   x-model="filtreCmd.client" @input="filtrerCommandes()"
+                   class="field text-sm py-2" />
+          </div>
+          <!-- Filtre date -->
+          <div>
+            <label for="f-date" class="text-xs text-gray-400 font-semibold uppercase tracking-wide block mb-1">Date prestation</label>
+            <input id="f-date" type="date" x-model="filtreCmd.date" @change="filtrerCommandes()" class="field text-sm py-2 w-36" />
+          </div>
+          <!-- Reset -->
+          <button @click="filtreCmd={statut:'',client:'',date:''}; filtrerCommandes()"
+                  class="text-sm text-rouille font-semibold hover:underline self-end pb-2">
+            Réinitialiser
+          </button>
+          <!-- Compteur -->
+          <p class="text-xs text-gray-400 ml-auto self-end pb-2" role="status" aria-live="polite">
+            <span x-text="commandesFiltrees.length"></span> commande(s)
+          </p>
+
+          <!-- Toggle Kanban / Table -->
+          <div class="flex gap-2 self-end ml-2" role="group" aria-label="Mode d'affichage">
+            <button @click="vueKanban=true"  :class="vueKanban  ? 'on':'off'" class="view-btn" aria-label="Vue kanban"  :aria-pressed="vueKanban.toString()">
+              <span aria-hidden="true">▦</span> Kanban
+            </button>
+            <button @click="vueKanban=false" :class="!vueKanban ? 'on':'off'" class="view-btn" aria-label="Vue tableau" :aria-pressed="(!vueKanban).toString()">
+              <span aria-hidden="true">☰</span> Tableau
+            </button>
+          </div>
+        </div>
+
+        <!-- ── VUE KANBAN (élément signature) ── -->
+        <div x-show="vueKanban" class="kanban-scroll">
+          <div class="flex gap-4 min-w-max pb-2" role="list" aria-label="Commandes par statut">
+            <template x-for="col in colonnesKanban" :key="col.statut">
+              <div class="kanban-col" role="listitem">
+                <!-- En-tête colonne -->
+                <div class="kanban-col-header flex items-center justify-between mb-3"
+                     :style="`background:${col.bg}; color:${col.color}`">
+                  <span x-text="col.label"></span>
+                  <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                        :style="`background:${col.color}20; color:${col.color}`"
+                        x-text="commandesParStatut(col.statut).length"></span>
+                </div>
+
+                <!-- Cartes commandes -->
+                <div class="space-y-3 min-h-24">
+                  <template x-if="commandesParStatut(col.statut).length === 0">
+                    <p class="text-xs text-gray-300 text-center py-6 italic">Aucune commande</p>
+                  </template>
+                  <template x-for="cmd in commandesParStatut(col.statut)" :key="cmd.numero_commande">
+                    <div class="kanban-card p-4">
+                      <!-- Numéro + date -->
+                      <div class="flex items-start justify-between gap-2 mb-2">
+                        <p class="font-mono text-xs font-bold text-gray-400" x-text="cmd.numero_commande"></p>
+                        <p class="text-xs text-gray-400 flex-shrink-0" x-text="formatDateCourt(cmd.date_prestation)"></p>
+                      </div>
+                      <!-- Menu -->
+                      <p class="font-semibold text-sm text-nuit mb-1 leading-tight" x-text="cmd.menu_titre"></p>
+                      <!-- Client + personnes -->
+                      <p class="text-xs text-gray-400 mb-3">
+                        <span x-text="cmd.client_prenom + ' ' + cmd.client_nom"></span>
+                        · <span x-text="cmd.nombre_personnes + ' pers.'"></span>
+                      </p>
+                      <!-- Heure livraison -->
+                      <div class="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span x-text="cmd.heure_livraison"></span>
+                        <span class="text-gray-300 mx-1" aria-hidden="true">·</span>
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span class="truncate max-w-[100px]" x-text="cmd.adresse_livraison.split(',')[1]?.trim() || cmd.adresse_livraison"></span>
+                      </div>
+                      <!-- Prix -->
+                      <div class="flex items-center justify-between">
+                        <span class="font-bold text-sm text-nuit" x-text="formatPrix(cmd.prix_total)"></span>
+                        <!-- Boutons action -->
+                        <div class="flex gap-1">
+                          <button @click="ouvrirDetailCommande(cmd)"
+                                  class="text-xs bg-gray-100 text-gray-600 px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
+                                  :aria-label="'Voir le détail de la commande ' + cmd.numero_commande">
+                            Détail
+                          </button>
+                          <template x-if="statutsSuivants(cmd.statut).length > 0">
+                            <div x-data="{open:false}" class="relative">
+                              <button @click="open=!open"
+                                      class="text-xs font-semibold px-2 py-1.5 rounded transition-colors"
+                                      style="background:#F0C060; color:#1A1208;"
+                                      :aria-label="'Avancer le statut de ' + cmd.numero_commande"
+                                      :aria-expanded="open.toString()">
+                                → Statut
+                              </button>
+                              <div x-show="open" @click.outside="open=false"
+                                   class="absolute right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-20 w-48 py-1">
+                                <template x-for="s in statutsSuivants(cmd.statut)" :key="s.val">
+                                  <button @click="changerStatut(cmd, s.val); open=false"
+                                          class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                                          x-text="s.label"></button>
+                                </template>
+                                <div x-show="peutAnnuler(cmd.statut)" class="border-t border-gray-100 mt-1 pt-1">
+                                  <button @click="ouvrirAnnulation(cmd); open=false"
+                                          class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors">
+                                    Annuler la commande
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- ── VUE TABLEAU ── -->
+        <div x-show="!vueKanban" class="bg-white rounded border border-gray-200 overflow-x-auto">
+          <table class="w-full" aria-label="Liste des commandes">
+            <thead class="tbl-head">
+              <tr>
+                <th scope="col">N° commande</th>
+                <th scope="col">Client</th>
+                <th scope="col">Menu</th>
+                <th scope="col">Prestation</th>
+                <th scope="col">Livraison</th>
+                <th scope="col">Total</th>
+                <th scope="col">Statut</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-if="commandesFiltrees.length === 0">
+                <tr><td colspan="8" class="text-center text-gray-400 py-12 text-sm">Aucune commande ne correspond aux filtres.</td></tr>
+              </template>
+              <template x-for="cmd in commandesFiltrees" :key="cmd.numero_commande">
+                <tr class="tbl-row">
+                  <td class="font-mono text-xs font-bold text-nuit" x-text="cmd.numero_commande"></td>
+                  <td>
+                    <p class="font-medium text-nuit text-sm" x-text="cmd.client_prenom + ' ' + cmd.client_nom"></p>
+                    <p class="text-xs text-gray-400" x-text="cmd.client_gsm"></p>
+                  </td>
+                  <td class="text-sm" x-text="cmd.menu_titre"></td>
+                  <td class="text-sm text-gray-600" x-text="formatDateCourt(cmd.date_prestation)"></td>
+                  <td class="text-sm text-gray-600" x-text="cmd.heure_livraison"></td>
+                  <td class="font-bold text-sm" x-text="formatPrix(cmd.prix_total)"></td>
+                  <td>
+                    <span class="badge" :class="'badge-' + cmd.statut" x-text="labelStatut(cmd.statut)"></span>
+                  </td>
+                  <td>
+                    <div class="flex gap-1.5 flex-wrap">
+                      <button @click="ouvrirDetailCommande(cmd)"
+                              class="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded hover:bg-gray-200 transition-colors"
+                              :aria-label="'Voir le détail de ' + cmd.numero_commande">Détail</button>
+                      <div x-show="statutsSuivants(cmd.statut).length > 0" x-data="{open:false}" class="relative">
+                        <button @click="open=!open"
+                                class="text-xs font-bold px-3 py-1.5 rounded transition-colors"
+                                style="background:#F0C060; color:#1A1208;"
+                                :aria-expanded="open.toString()">Avancer ▾</button>
+                        <div x-show="open" @click.outside="open=false"
+                             class="absolute right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-20 w-52 py-1">
+                          <template x-for="s in statutsSuivants(cmd.statut)" :key="s.val">
+                            <button @click="changerStatut(cmd, s.val); open=false"
+                                    class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                                    x-text="s.label"></button>
+                          </template>
+                        </div>
+                      </div>
+                      <button x-show="peutAnnuler(cmd.statut)"
+                              @click="ouvrirAnnulation(cmd)"
+                              class="text-xs border border-red-200 text-red-500 px-3 py-1.5 rounded hover:bg-red-50 transition-colors"
+                              :aria-label="'Annuler la commande ' + cmd.numero_commande">Annuler</button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+
+      <!-- ═══════════════════════════════════
+           SECTION MENUS & PLATS
+      ════════════════════════════════════ -->
+      <div x-show="section==='menus'" role="region" aria-label="Gestion des menus et plats">
+
+        <div class="flex justify-between items-center mb-4">
+          <p class="text-sm text-gray-500"><span x-text="menus.length"></span> menu(s)</p>
+          <button @click="ouvrirNouveauMenu()"
+                  class="font-semibold text-sm px-4 py-2.5 rounded hover:opacity-90 transition-opacity flex items-center gap-2"
+                  style="background:#F0C060; color:#1A1208;">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nouveau menu
+          </button>
+        </div>
+
+        <div class="bg-white rounded border border-gray-200 overflow-x-auto">
+          <table class="w-full" aria-label="Liste des menus">
+            <thead class="tbl-head">
+              <tr>
+                <th scope="col">Menu</th>
+                <th scope="col">Thème</th>
+                <th scope="col">Régime</th>
+                <th scope="col">Pers. min.</th>
+                <th scope="col">Prix / pers.</th>
+                <th scope="col">Stock</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="menu in menus" :key="menu.menu_id">
+                <tr class="tbl-row">
+                  <td>
+                    <p class="font-semibold text-nuit text-sm" x-text="menu.titre"></p>
+                    <p class="text-xs text-gray-400 truncate max-w-xs" x-text="menu.description"></p>
+                  </td>
+                  <td class="text-sm" x-text="menu.theme"></td>
+                  <td class="text-sm" x-text="menu.regime"></td>
+                  <td class="text-sm font-medium" x-text="menu.nombre_personne_minimum + ' pers.'"></td>
+                  <td class="text-sm font-bold text-rouille" x-text="formatPrix(menu.prix_par_personne)"></td>
+                  <td>
+                    <span :class="menu.quantite_restante === 0 ? 'text-red-500 font-bold' : menu.quantite_restante <= 3 ? 'text-orange-500 font-bold' : 'text-herbe font-semibold'"
+                          class="text-sm"
+                          x-text="menu.quantite_restante === null ? '∞' : menu.quantite_restante"></span>
+                  </td>
+                  <td>
+                    <div class="flex gap-2">
+                      <button @click="ouvrirEditionMenu(menu)"
+                              class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-200 transition-colors"
+                              :aria-label="'Modifier le menu ' + menu.titre">Modifier</button>
+                      <button @click="supprimerMenu(menu)"
+                              class="text-xs border border-red-200 text-red-500 px-3 py-1.5 rounded hover:bg-red-50 transition-colors"
+                              :aria-label="'Supprimer le menu ' + menu.titre">Supprimer</button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+
+      <!-- ═══════════════════════════════════
+           SECTION HORAIRES
+      ════════════════════════════════════ -->
+      <div x-show="section==='horaires'" role="region" aria-label="Gestion des horaires">
+        <div class="bg-white rounded border border-gray-200 max-w-xl">
+          <div class="p-6 border-b border-gray-100">
+            <h2 class="font-display text-xl font-bold text-nuit">Horaires d'ouverture</h2>
+            <p class="text-sm text-gray-400 mt-1">Ces horaires apparaissent sur le pied de page du site public.</p>
+          </div>
+
+          <div x-show="horaires.succes"
+               class="mx-6 mt-4 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded flex items-center gap-2"
+               role="status" aria-live="polite">
+            <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            Horaires enregistrés avec succès.
+          </div>
+
+          <form @submit.prevent="sauvegarderHoraires()" class="p-6 space-y-3">
+            <template x-for="h in horaires.liste" :key="h.horaire_id">
+              <div class="flex items-center gap-4">
+                <span class="w-24 text-sm font-semibold text-nuit flex-shrink-0" x-text="h.jour"></span>
+                <!-- Toggle fermé -->
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" x-model="h.ferme" class="accent-foret w-4 h-4"
+                         :aria-label="h.jour + ' : ' + (h.ferme ? 'Fermé' : 'Ouvert')" />
+                  <span class="text-sm text-gray-500">Fermé</span>
+                </label>
+                <!-- Plages horaires -->
+                <div x-show="!h.ferme" class="flex items-center gap-2 flex-1">
+                  <input type="time" x-model="h.heure_ouverture"
+                         class="field text-sm py-1.5 w-28"
+                         :aria-label="'Heure ouverture ' + h.jour" />
+                  <span class="text-gray-400 text-sm" aria-hidden="true">–</span>
+                  <input type="time" x-model="h.heure_fermeture"
+                         class="field text-sm py-1.5 w-28"
+                         :aria-label="'Heure fermeture ' + h.jour" />
+                </div>
+                <div x-show="h.ferme" class="text-sm text-gray-300 italic flex-1">Fermé ce jour</div>
+              </div>
+            </template>
+
+            <div class="pt-4 border-t border-gray-100">
+              <button type="submit" :disabled="horaires.chargement"
+                      class="font-bold py-2.5 px-6 rounded hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                      style="background:#F0C060; color:#1A1208;">
+                <span class="spin border-nuit/20" style="border-top-color:#1A1208" x-show="horaires.chargement" aria-hidden="true"></span>
+                <span x-text="horaires.chargement ? 'Enregistrement…' : 'Enregistrer les horaires'"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+
+      <!-- ═══════════════════════════════════
+           SECTION AVIS
+      ════════════════════════════════════ -->
+      <div x-show="section==='avis'" role="region" aria-label="Modération des avis clients">
+
+        <div x-show="avisEnAttente.length === 0"
+             class="bg-white rounded border border-gray-200 p-16 text-center">
+          <p class="text-4xl mb-3" aria-hidden="true">✅</p>
+          <p class="font-semibold text-nuit">Aucun avis en attente.</p>
+          <p class="text-sm text-gray-400 mt-1">Tous les avis ont été traités.</p>
+        </div>
+
+        <div class="space-y-4" x-show="avisEnAttente.length > 0">
+          <template x-for="avis in avisEnAttente" :key="avis.avis_id">
+            <div class="bg-white rounded border border-gray-200 p-5">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1">
+                  <div class="flex gap-0.5 mb-2" :aria-label="`Note : ${avis.note}/5`">
+                    <template x-for="i in 5" :key="i">
+                      <span :class="i<=avis.note ? 'text-safran' : 'text-gray-200'" class="text-lg" aria-hidden="true">★</span>
+                    </template>
+                  </div>
+                  <p class="text-sm text-nuit leading-relaxed mb-2" x-text="`« ${avis.commentaire} »`"></p>
+                  <div class="flex gap-3 text-xs text-gray-400">
+                    <span x-text="avis.auteur_prenom + ' ' + avis.auteur_nom[0] + '.'"></span>
+                    <span>·</span>
+                    <span x-text="'Menu : ' + avis.menu_titre"></span>
+                    <span>·</span>
+                    <span x-text="formatDateCourt(avis.date)"></span>
+                  </div>
+                </div>
+                <div class="flex gap-2 flex-shrink-0">
+                  <button @click="validerAvis(avis)"
+                          class="flex items-center gap-1.5 text-white text-sm font-semibold px-4 py-2 rounded hover:opacity-90 transition-opacity"
+                          style="background:#4A7C59;"
+                          :aria-label="'Valider l\'avis de ' + avis.auteur_prenom">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Publier
+                  </button>
+                  <button @click="refuserAvis(avis)"
+                          class="flex items-center gap-1.5 border border-red-200 text-red-500 text-sm font-semibold px-4 py-2 rounded hover:bg-red-50 transition-colors"
+                          :aria-label="'Refuser l\'avis de ' + avis.auteur_prenom">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Refuser
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       MODALE : DÉTAIL COMMANDE
+  ═══════════════════════════════════════ -->
+  <div x-show="modales.detail" x-transition
+       class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
+       role="dialog" aria-modal="true" aria-labelledby="modale-detail-titre"
+       @keydown.escape.window="modales.detail=false" @click.self="modales.detail=false">
+    <div class="bg-white rounded shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
+
+      <div class="flex justify-between items-center p-6 border-b border-gray-100">
+        <div>
+          <h2 id="modale-detail-titre" class="font-display text-xl font-bold text-nuit"
+              x-text="cmdEnCours?.menu_titre"></h2>
+          <p class="text-xs text-gray-400 font-mono mt-0.5" x-text="cmdEnCours?.numero_commande"></p>
+        </div>
+        <button @click="modales.detail=false" class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-foret rounded" aria-label="Fermer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div x-show="cmdEnCours" class="p-6 space-y-5">
+        <!-- Statut actuel -->
+        <div class="flex items-center gap-2">
+          <span class="badge" :class="'badge-' + cmdEnCours?.statut" x-text="labelStatut(cmdEnCours?.statut)"></span>
+        </div>
+
+        <!-- Infos client -->
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Client</p>
+            <p class="font-medium text-nuit" x-text="cmdEnCours?.client_prenom + ' ' + cmdEnCours?.client_nom"></p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Téléphone</p>
+            <a :href="'tel:' + cmdEnCours?.client_gsm" class="font-medium text-herbe hover:underline" x-text="cmdEnCours?.client_gsm"></a>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">E-mail</p>
+            <a :href="'mailto:' + cmdEnCours?.client_email" class="font-medium text-herbe hover:underline text-xs truncate block" x-text="cmdEnCours?.client_email"></a>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Personnes</p>
+            <p class="font-medium text-nuit" x-text="cmdEnCours?.nombre_personnes + ' personnes'"></p>
+          </div>
+          <div class="col-span-2">
+            <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Adresse de livraison</p>
+            <p class="font-medium text-nuit" x-text="cmdEnCours?.adresse_livraison"></p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Date de prestation</p>
+            <p class="font-medium text-nuit" x-text="formatDate(cmdEnCours?.date_prestation)"></p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Heure souhaitée</p>
+            <p class="font-medium text-nuit" x-text="cmdEnCours?.heure_livraison"></p>
+          </div>
+        </div>
+
+        <!-- Prix -->
+        <div class="bg-gray-50 rounded p-4 text-sm space-y-2">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Prix menu</span>
+            <span class="font-medium" x-text="formatPrix(cmdEnCours?.prix_menu)"></span>
+          </div>
+          <div x-show="cmdEnCours?.reduction > 0" class="flex justify-between text-herbe">
+            <span>Réduction 10%</span>
+            <span class="font-medium" x-text="'−' + formatPrix(cmdEnCours?.reduction)"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Livraison</span>
+            <span class="font-medium" x-text="formatPrix(cmdEnCours?.prix_livraison)"></span>
+          </div>
+          <div class="border-t border-gray-200 pt-2 flex justify-between font-bold">
+            <span>Total</span>
+            <span x-text="formatPrix(cmdEnCours?.prix_total)"></span>
+          </div>
+        </div>
+
+        <!-- Actions depuis la modale -->
+        <div x-show="statutsSuivants(cmdEnCours?.statut).length > 0 || peutAnnuler(cmdEnCours?.statut)" class="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+          <template x-for="s in statutsSuivants(cmdEnCours?.statut)" :key="s.val">
+            <button @click="changerStatut(cmdEnCours, s.val); modales.detail=false"
+                    class="font-bold text-sm px-4 py-2.5 rounded hover:opacity-90 transition-opacity"
+                    style="background:#F0C060; color:#1A1208;"
+                    x-text="'→ ' + s.label"></button>
+          </template>
+          <button x-show="peutAnnuler(cmdEnCours?.statut)"
+                  @click="modales.detail=false; ouvrirAnnulation(cmdEnCours)"
+                  class="border border-red-200 text-red-500 text-sm font-semibold px-4 py-2.5 rounded hover:bg-red-50 transition-colors">
+            Annuler la commande
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       MODALE : CRÉER / MODIFIER MENU
+  ═══════════════════════════════════════ -->
+  <div x-show="modales.menu" x-transition
+       class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
+       role="dialog" aria-modal="true" aria-labelledby="modale-menu-emp-titre"
+       @keydown.escape.window="modales.menu=false" @click.self="modales.menu=false">
+    <div class="bg-white rounded shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
+
+      <div class="flex justify-between items-center p-6 border-b border-gray-100">
+        <h2 id="modale-menu-emp-titre" class="font-display text-xl font-bold text-nuit"
+            x-text="menuForm.menu_id ? 'Modifier le menu' : 'Nouveau menu'"></h2>
+        <button @click="modales.menu=false" class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-foret rounded" aria-label="Fermer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form @submit.prevent="soumettreMenu()" novalidate class="p-6 space-y-4">
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label for="mf-titre" class="block text-sm font-semibold text-nuit mb-1">Titre <span class="text-rouille" aria-hidden="true">*</span></label>
+            <input id="mf-titre" type="text" x-model="menuForm.titre" class="field" required :class="menuFormErr.titre?'err':''"/>
+            <p x-show="menuFormErr.titre" class="text-red-600 text-xs mt-1" x-text="menuFormErr.titre" role="alert"></p>
+          </div>
+          <div class="sm:col-span-2">
+            <label for="mf-desc" class="block text-sm font-semibold text-nuit mb-1">Description <span class="text-rouille" aria-hidden="true">*</span></label>
+            <textarea id="mf-desc" rows="3" x-model="menuForm.description" class="field resize-none" required></textarea>
+          </div>
+          <div>
+            <label for="mf-theme" class="block text-sm font-semibold text-nuit mb-1">Thème <span class="text-rouille" aria-hidden="true">*</span></label>
+            <select id="mf-theme" x-model="menuForm.theme" class="field" required>
+              <option value="">Choisir…</option>
+              <option value="Noël">Noël</option>
+              <option value="Pâques">Pâques</option>
+              <option value="classique">Classique</option>
+              <option value="évènement">Événement</option>
+            </select>
+          </div>
+          <div>
+            <label for="mf-regime" class="block text-sm font-semibold text-nuit mb-1">Régime <span class="text-rouille" aria-hidden="true">*</span></label>
+            <select id="mf-regime" x-model="menuForm.regime" class="field" required>
+              <option value="">Choisir…</option>
+              <option value="classique">Classique</option>
+              <option value="végétarien">Végétarien</option>
+              <option value="vegan">Vegan</option>
+            </select>
+          </div>
+          <div>
+            <label for="mf-pers" class="block text-sm font-semibold text-nuit mb-1">Personnes minimum <span class="text-rouille" aria-hidden="true">*</span></label>
+            <input id="mf-pers" type="number" min="1" x-model.number="menuForm.nombre_personne_minimum" class="field" required />
+          </div>
+          <div>
+            <label for="mf-prix" class="block text-sm font-semibold text-nuit mb-1">Prix / personne (€) <span class="text-rouille" aria-hidden="true">*</span></label>
+            <input id="mf-prix" type="number" min="0" step="0.01" x-model.number="menuForm.prix_par_personne" class="field" required />
+          </div>
+          <div>
+            <label for="mf-stock" class="block text-sm font-semibold text-nuit mb-1">Stock disponible</label>
+            <input id="mf-stock" type="number" min="0" x-model.number="menuForm.quantite_restante" class="field" placeholder="Vide = illimité" />
+          </div>
+          <div class="sm:col-span-2">
+            <label for="mf-cond" class="block text-sm font-semibold text-nuit mb-1">Conditions</label>
+            <textarea id="mf-cond" rows="2" x-model="menuForm.conditions" class="field resize-none" placeholder="Délai de commande, précautions de stockage…"></textarea>
+          </div>
+        </div>
+
+        <div x-show="menuFormErr.global" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded" role="alert" x-text="menuFormErr.global"></div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="submit" :disabled="menuForm.chargement"
+                  class="flex-1 font-bold py-3 rounded hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                  style="background:#F0C060; color:#1A1208;">
+            <span class="spin" style="border-top-color:#1A1208; border-color:rgba(26,18,8,.2)" x-show="menuForm.chargement" aria-hidden="true"></span>
+            <span x-text="menuForm.chargement ? 'Enregistrement…' : (menuForm.menu_id ? 'Enregistrer' : 'Créer le menu')"></span>
+          </button>
+          <button type="button" @click="modales.menu=false"
+                  class="px-6 border border-gray-200 text-gray-600 font-semibold py-3 rounded hover:bg-gray-50 transition-colors">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       MODALE : ANNULATION COMMANDE
+  ═══════════════════════════════════════ -->
+  <div x-show="modales.annulation" x-transition
+       class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
+       role="dialog" aria-modal="true" aria-labelledby="modale-annul-emp-titre"
+       @keydown.escape.window="modales.annulation=false" @click.self="modales.annulation=false">
+    <div class="bg-white rounded shadow-xl w-full max-w-md p-8"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
+
+      <div class="flex justify-between items-start mb-4">
+        <h2 id="modale-annul-emp-titre" class="font-display text-xl font-bold text-nuit">Annuler la commande</h2>
+        <button @click="modales.annulation=false" class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-foret rounded" aria-label="Fermer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Rappel client -->
+      <div class="bg-amber-50 border border-amber-200 rounded p-4 mb-5 text-sm text-amber-800">
+        <p class="font-semibold mb-1">⚠️ Contact client obligatoire</p>
+        <p>Vous devez avoir contacté <strong x-text="cmdEnCours?.client_prenom + ' ' + cmdEnCours?.client_nom"></strong> par GSM
+          (<a :href="'tel:' + cmdEnCours?.client_gsm" class="underline font-mono" x-text="cmdEnCours?.client_gsm"></a>)
+          ou par e-mail avant d'annuler cette commande.</p>
+      </div>
+
+      <form @submit.prevent="soumettreAnnulation()" novalidate class="space-y-4">
+        <div>
+          <label for="ann-contact" class="block text-sm font-semibold text-nuit mb-1">Mode de contact utilisé <span class="text-rouille" aria-hidden="true">*</span></label>
+          <select id="ann-contact" x-model="annulation.modeContact" class="field" required :class="annulation.erreurs.modeContact?'err':''">
+            <option value="">Sélectionner…</option>
+            <option value="gsm">Appel GSM</option>
+            <option value="mail">E-mail</option>
+          </select>
+          <p x-show="annulation.erreurs.modeContact" class="text-red-600 text-xs mt-1" x-text="annulation.erreurs.modeContact" role="alert"></p>
+        </div>
+        <div>
+          <label for="ann-motif" class="block text-sm font-semibold text-nuit mb-1">Motif d'annulation <span class="text-rouille" aria-hidden="true">*</span></label>
+          <textarea id="ann-motif" rows="3" x-model="annulation.motif" class="field resize-none" required :class="annulation.erreurs.motif?'err':''"
+                    placeholder="Expliquez la raison de l'annulation…"></textarea>
+          <p x-show="annulation.erreurs.motif" class="text-red-600 text-xs mt-1" x-text="annulation.erreurs.motif" role="alert"></p>
+        </div>
+
+        <div x-show="annulation.erreur" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded" role="alert" x-text="annulation.erreur"></div>
+
+        <div class="flex gap-3 pt-1">
+          <button type="submit" :disabled="annulation.chargement"
+                  class="flex-1 bg-red-600 text-white font-bold py-3 rounded hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+            <span class="spin" style="border-color:rgba(255,255,255,.3); border-top-color:white" x-show="annulation.chargement" aria-hidden="true"></span>
+            <span x-text="annulation.chargement ? 'Annulation…' : 'Confirmer l\'annulation'"></span>
+          </button>
+          <button type="button" @click="modales.annulation=false"
+                  class="px-5 border border-gray-200 text-gray-600 font-semibold py-3 rounded hover:bg-gray-50 transition-colors">Retour</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div x-show="toast.visible" x-transition class="toast" role="status" aria-live="polite" x-text="toast.message"></div>
+
+
+  <!-- ══════════════════════════════════════
+       SCRIPT
+  ═══════════════════════════════════════ -->
+  <script>
+    const API_BASE = '/api';
+
+    function employeApp() {
+      return {
+        section:    'commandes',
+        employe:    null,
+        vueKanban:  true,
+
+        commandes:         [],
+        commandesFiltrees: [],
+        menus:             [],
+        avisEnAttente:     [],
+
+        filtreCmd: { statut:'', client:'', date:'' },
+
+        modales:   { detail:false, menu:false, annulation:false },
+        cmdEnCours: null,
+
+        menuForm:    { menu_id:null, titre:'', description:'', theme:'', regime:'', nombre_personne_minimum:4, prix_par_personne:0, quantite_restante:null, conditions:'', chargement:false },
+        menuFormErr: {},
+
+        annulation:  { modeContact:'', motif:'', chargement:false, erreur:null, erreurs:{} },
+
+        horaires: {
+          liste: [],
+          chargement: false,
+          succes: false,
+        },
+
+        toast: { visible:false, message:'' },
+
+        // Statuts navigables dans flux employé
+        statutsDisponibles: [
+          { val:'en_attente',         label:'En attente' },
+          { val:'accepte',            label:'Acceptée' },
+          { val:'en_preparation',     label:'En préparation' },
+          { val:'en_cours_livraison', label:'En livraison' },
+          { val:'livre',              label:'Livrée' },
+          { val:'attente_materiel',   label:'Retour matériel' },
+          { val:'terminee',           label:'Terminée' },
+          { val:'annulee',            label:'Annulée' },
+        ],
+
+        // Définition des colonnes kanban
+        colonnesKanban: [
+          { statut:'en_attente',         label:'En attente',       bg:'#FEF9EC', color:'#92400E' },
+          { statut:'accepte',            label:'Acceptée',         bg:'#EFF6FF', color:'#1E40AF' },
+          { statut:'en_preparation',     label:'En préparation',   bg:'#FDF2F8', color:'#9D174D' },
+          { statut:'en_cours_livraison', label:'En livraison',     bg:'#F5F3FF', color:'#5B21B6' },
+          { statut:'livre',              label:'Livrée',           bg:'#F0FDF4', color:'#166534' },
+          { statut:'attente_materiel',   label:'Retour matériel',  bg:'#FFF7ED', color:'#C2410C' },
+          { statut:'terminee',           label:'Terminée',         bg:'#F0FDF4', color:'#15803D' },
+        ],
+
+        // ── Computed ──────────────────────────────────────────
+        get nbEnAttente() { return this.commandes.filter(c=>c.statut==='en_attente').length; },
+
+        commandesParStatut(statut) {
+          return this.commandesFiltrees.filter(c => c.statut === statut);
+        },
+
+        // ── Init ──────────────────────────────────────────────
+        async init() {
+          await Promise.all([
+            this.chargerEmploye(),
+            this.chargerCommandes(),
+            this.chargerMenus(),
+            this.chargerAvis(),
+            this.chargerHoraires(),
+          ]);
+        },
+
+        // ── Auth ──────────────────────────────────────────────
+        async chargerEmploye() {
+          try {
+            const res = await fetch(`${API_BASE}/auth/me`, { credentials:'include', headers:{'Accept':'application/json'} });
+            if (!res.ok) { window.location.href='/connexion'; return; }
+            const data = await res.json();
+            if (!['employe','administrateur'].includes(data.role)) { window.location.href='/'; return; }
+            this.employe = data;
+          } catch {
+            this.employe = { prenom:'Julie', nom:'Moreau', role:'employe' };
+          }
+        },
+
+        // ── Commandes ─────────────────────────────────────────
+        async chargerCommandes() {
+          try {
+            /*
+             * GET /api/employe/commandes
+             * Réponse : [{ numero_commande, client_prenom, client_nom,
+             *               client_email, client_gsm, menu_titre, menu_id,
+             *               date_prestation, heure_livraison, adresse_livraison,
+             *               nombre_personnes, statut,
+             *               prix_menu, prix_livraison, reduction, prix_total }]
+             */
+            const res = await fetch(`${API_BASE}/employe/commandes`, { credentials:'include', headers:{'Accept':'application/json'} });
+            if (!res.ok) throw new Error();
+            this.commandes = await res.json();
+          } catch {
+            this.commandes = demoCommandes();
+          }
+          this.filtrerCommandes();
+        },
+
+        filtrerCommandes() {
+          this.commandesFiltrees = this.commandes.filter(c => {
+            const q = (this.filtreCmd.client||'').toLowerCase();
+            if (q && !`${c.client_prenom} ${c.client_nom} ${c.client_email}`.toLowerCase().includes(q)) return false;
+            if (this.filtreCmd.statut && c.statut !== this.filtreCmd.statut) return false;
+            if (this.filtreCmd.date   && c.date_prestation !== this.filtreCmd.date) return false;
+            return true;
+          });
+        },
+
+        async changerStatut(cmd, nouveauStatut) {
+          try {
+            /*
+             * PUT /api/employe/commandes/:numero/statut
+             * Body : { statut }
+             * → met à jour le statut, envoie un mail au client si 'terminee' ou 'attente_materiel'
+             */
+            await fetch(`${API_BASE}/employe/commandes/${cmd.numero_commande}/statut`, {
+              method:'PUT', credentials:'include',
+              headers:{'Content-Type':'application/json','Accept':'application/json'},
+              body: JSON.stringify({ statut: nouveauStatut }),
+            });
+          } catch { /* mode démo : mise à jour locale */ }
+          cmd.statut = nouveauStatut;
+          this.filtrerCommandes();
+          this.afficherToast(`Statut → ${this.labelStatut(nouveauStatut)}`);
+        },
+
+        statutsSuivants(actuel) {
+          const flux = {
+            en_attente:         ['accepte'],
+            accepte:            ['en_preparation'],
+            en_preparation:     ['en_cours_livraison'],
+            en_cours_livraison: ['livre'],
+            livre:              ['attente_materiel','terminee'],
+            attente_materiel:   ['terminee'],
+          };
+          return (flux[actuel] || []).map(v => this.statutsDisponibles.find(s=>s.val===v)).filter(Boolean);
+        },
+
+        peutAnnuler(statut) {
+          return ['en_attente','accepte','en_preparation'].includes(statut);
+        },
+
+        ouvrirDetailCommande(cmd) {
+          this.cmdEnCours = cmd;
+          this.modales.detail = true;
+        },
+
+        ouvrirAnnulation(cmd) {
+          this.cmdEnCours = cmd;
+          this.annulation = { modeContact:'', motif:'', chargement:false, erreur:null, erreurs:{} };
+          this.modales.annulation = true;
+        },
+
+        async soumettreAnnulation() {
+          this.annulation.erreurs = {};
+          if (!this.annulation.modeContact) { this.annulation.erreurs.modeContact = 'Obligatoire.'; return; }
+          if (!this.annulation.motif.trim()) { this.annulation.erreurs.motif = 'Le motif est obligatoire.'; return; }
+          this.annulation.chargement = true;
+          try {
+            /*
+             * DELETE /api/employe/commandes/:numero
+             * Body : { modeContact, motif }
+             */
+            await fetch(`${API_BASE}/employe/commandes/${this.cmdEnCours.numero_commande}`, {
+              method:'DELETE', credentials:'include',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ modeContact:this.annulation.modeContact, motif:this.annulation.motif }),
+            });
+          } catch {}
+          this.cmdEnCours.statut = 'annulee';
+          this.filtrerCommandes();
+          this.modales.annulation = false;
+          this.afficherToast('Commande annulée.');
+          this.annulation.chargement = false;
+        },
+
+        // ── Menus ─────────────────────────────────────────────
+        async chargerMenus() {
+          try {
+            const res = await fetch(`${API_BASE}/menus`, { credentials:'include', headers:{'Accept':'application/json'} });
+            if (!res.ok) throw new Error();
+            this.menus = await res.json();
+          } catch {
+            this.menus = demoMenus();
+          }
+        },
+
+        ouvrirNouveauMenu() {
+          this.menuForm = { menu_id:null, titre:'', description:'', theme:'', regime:'', nombre_personne_minimum:4, prix_par_personne:0, quantite_restante:null, conditions:'', chargement:false };
+          this.menuFormErr = {};
+          this.modales.menu = true;
+        },
+        ouvrirEditionMenu(menu) {
+          this.menuForm = { ...menu, chargement:false };
+          this.menuFormErr = {};
+          this.modales.menu = true;
+        },
+
+        async soumettreMenu() {
+          this.menuFormErr = {};
+          if (!this.menuForm.titre.trim()) { this.menuFormErr.titre = 'Le titre est obligatoire.'; return; }
+          if (!this.menuForm.theme)        { this.menuFormErr.global = 'Choisissez un thème.'; return; }
+          if (!this.menuForm.regime)       { this.menuFormErr.global = 'Choisissez un régime.'; return; }
+          this.menuForm.chargement = true;
+          try {
+            const method = this.menuForm.menu_id ? 'PUT' : 'POST';
+            const url    = this.menuForm.menu_id ? `${API_BASE}/employe/menus/${this.menuForm.menu_id}` : `${API_BASE}/employe/menus`;
+            /* PUT /api/employe/menus/:id  |  POST /api/employe/menus */
+            await fetch(url, { method, credentials:'include', headers:{'Content-Type':'application/json','Accept':'application/json'}, body:JSON.stringify(this.menuForm) });
+          } catch {}
+          if (this.menuForm.menu_id) {
+            const idx = this.menus.findIndex(m=>m.menu_id===this.menuForm.menu_id);
+            if (idx!==-1) this.menus[idx] = { ...this.menus[idx], ...this.menuForm };
+          } else {
+            this.menus.push({ menu_id:Date.now(), ...this.menuForm });
+          }
+          this.menuForm.chargement = false;
+          this.modales.menu = false;
+          this.afficherToast(this.menuForm.menu_id ? 'Menu modifié.' : 'Menu créé.');
+        },
+
+        async supprimerMenu(menu) {
+          if (!confirm(`Supprimer "${menu.titre}" ?`)) return;
+          try { await fetch(`${API_BASE}/employe/menus/${menu.menu_id}`, { method:'DELETE', credentials:'include' }); } catch {}
+          this.menus = this.menus.filter(m=>m.menu_id!==menu.menu_id);
+          this.afficherToast('Menu supprimé.');
+        },
+
+        // ── Horaires ──────────────────────────────────────────
+        async chargerHoraires() {
+          try {
+            /*
+             * GET /api/horaires
+             * Réponse : [{ horaire_id, jour, heure_ouverture, heure_fermeture, ferme }]
+             */
+            const res = await fetch(`${API_BASE}/horaires`, { credentials:'include', headers:{'Accept':'application/json'} });
+            if (!res.ok) throw new Error();
+            this.horaires.liste = await res.json();
+          } catch {
+            this.horaires.liste = [
+              { horaire_id:1, jour:'Lundi',    heure_ouverture:'08:00', heure_fermeture:'19:00', ferme:false },
+              { horaire_id:2, jour:'Mardi',    heure_ouverture:'08:00', heure_fermeture:'19:00', ferme:false },
+              { horaire_id:3, jour:'Mercredi', heure_ouverture:'08:00', heure_fermeture:'19:00', ferme:false },
+              { horaire_id:4, jour:'Jeudi',    heure_ouverture:'08:00', heure_fermeture:'19:00', ferme:false },
+              { horaire_id:5, jour:'Vendredi', heure_ouverture:'08:00', heure_fermeture:'20:00', ferme:false },
+              { horaire_id:6, jour:'Samedi',   heure_ouverture:'09:00', heure_fermeture:'18:00', ferme:false },
+              { horaire_id:7, jour:'Dimanche', heure_ouverture:'',      heure_fermeture:'',      ferme:true  },
+            ];
+          }
+        },
+
+        async sauvegarderHoraires() {
+          this.horaires.chargement = true;
+          this.horaires.succes = false;
+          try {
+            /*
+             * PUT /api/employe/horaires
+             * Body : [{ horaire_id, heure_ouverture, heure_fermeture, ferme }]
+             */
+            await fetch(`${API_BASE}/employe/horaires`, {
+              method:'PUT', credentials:'include',
+              headers:{'Content-Type':'application/json','Accept':'application/json'},
+              body: JSON.stringify(this.horaires.liste),
+            });
+          } catch {}
+          this.horaires.chargement = false;
+          this.horaires.succes = true;
+          this.afficherToast('Horaires enregistrés.');
+          setTimeout(()=>{ this.horaires.succes=false; }, 4000);
+        },
+
+        // ── Avis ──────────────────────────────────────────────
+        async chargerAvis() {
+          try {
+            const res = await fetch(`${API_BASE}/employe/avis?statut=en_attente`, { credentials:'include', headers:{'Accept':'application/json'} });
+            if (!res.ok) throw new Error();
+            this.avisEnAttente = await res.json();
+          } catch {
+            this.avisEnAttente = [
+              { avis_id:1, note:5, commentaire:'Parfait de bout en bout, livraison ultra-ponctuelle !', auteur_prenom:'Marie',  auteur_nom:'Dupont',  menu_titre:'Menu de Noël Prestige', date:'2025-01-03' },
+              { avis_id:2, note:4, commentaire:'Très bon repas, légère attente à la livraison.',        auteur_prenom:'Thomas', auteur_nom:'Bernard', menu_titre:'Brunch de Pâques',      date:'2025-04-22' },
+            ];
+          }
+        },
+
+        async validerAvis(avis) {
+          try { await fetch(`${API_BASE}/employe/avis/${avis.avis_id}/valider`, { method:'PUT', credentials:'include' }); } catch {}
+          this.avisEnAttente = this.avisEnAttente.filter(a=>a.avis_id!==avis.avis_id);
+          this.afficherToast('Avis publié sur la page d\'accueil.');
+        },
+        async refuserAvis(avis) {
+          try { await fetch(`${API_BASE}/employe/avis/${avis.avis_id}/refuser`, { method:'DELETE', credentials:'include' }); } catch {}
+          this.avisEnAttente = this.avisEnAttente.filter(a=>a.avis_id!==avis.avis_id);
+          this.afficherToast('Avis refusé.');
+        },
+
+        // ── Déconnexion ───────────────────────────────────────
+        async seDeconnecter() {
+          try { await fetch(`${API_BASE}/auth/logout`, { method:'POST', credentials:'include' }); } finally { window.location.href='/connexion'; }
+        },
+
+        // ── Helpers ───────────────────────────────────────────
+        labelStatut(s) {
+          return { en_attente:'En attente', accepte:'Acceptée', en_preparation:'En préparation', en_cours_livraison:'En livraison', livre:'Livrée', attente_materiel:'Retour matériel', terminee:'Terminée', annulee:'Annulée' }[s] || s;
+        },
+        formatPrix(v)       { return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(v||0); },
+        formatDateCourt(d)  { if(!d)return''; return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}); },
+        formatDate(d)       { if(!d)return''; return new Date(d).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); },
+        dateAujourdhui()    { return new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); },
+        afficherToast(msg)  { this.toast={visible:true,message:msg}; setTimeout(()=>{this.toast.visible=false;},3000); },
+      };
+    }
+
+    // ── Données de démo ──────────────────────────────────────
+    function demoCommandes() {
+      return [
+        { numero_commande:'VG-2025-0042', client_prenom:'Marie',  client_nom:'Dupont',  client_email:'marie@ex.fr',  client_gsm:'+33612345678', menu_titre:'Menu de Noël Prestige',        menu_id:1, date_prestation:'2025-12-24', heure_livraison:'12:00', adresse_livraison:'12 rue des Chartrons, 33000 Bordeaux', nombre_personnes:10, statut:'en_preparation',     prix_menu:378, prix_livraison:5,     reduction:0,   prix_total:383   },
+        { numero_commande:'VG-2025-0043', client_prenom:'Thomas', client_nom:'Bernard', client_email:'thomas@ex.fr', client_gsm:'+33698765432', menu_titre:'Brunch de Pâques',             menu_id:2, date_prestation:'2025-04-20', heure_livraison:'10:30', adresse_livraison:'5 allée des Mimosas, 33700 Mérignac',  nombre_personnes:6,  statut:'en_attente',          prix_menu:168, prix_livraison:10.31, reduction:0,   prix_total:178.31},
+        { numero_commande:'VG-2025-0044', client_prenom:'Sophie', client_nom:'Martin',  client_email:'sophie@ex.fr', client_gsm:'+33611223344', menu_titre:'Cocktail Dinatoire Événement', menu_id:4, date_prestation:'2026-01-15', heure_livraison:'19:00', adresse_livraison:'3 place de la Bourse, 33000 Bordeaux',  nombre_personnes:25, statut:'accepte',             prix_menu:875, prix_livraison:5,     reduction:87.5,prix_total:792.5 },
+        { numero_commande:'VG-2025-0045', client_prenom:'Lucas',  client_nom:'Petit',   client_email:'lucas@ex.fr',  client_gsm:'+33677889900', menu_titre:'Menu Végétarien Printemps',    menu_id:3, date_prestation:'2025-06-10', heure_livraison:'13:00', adresse_livraison:'8 cours du Médoc, 33300 Bordeaux',      nombre_personnes:4,  statut:'en_cours_livraison',  prix_menu:96,  prix_livraison:5,     reduction:0,   prix_total:101   },
+        { numero_commande:'VG-2025-0046', client_prenom:'Emma',   client_nom:'Leroy',   client_email:'emma@ex.fr',   client_gsm:'+33644556677', menu_titre:'Menu de Noël Prestige',        menu_id:1, date_prestation:'2025-12-31', heure_livraison:'12:30', adresse_livraison:'20 rue Sainte-Catherine, 33000 Bordeaux',nombre_personnes:8,  statut:'en_attente',          prix_menu:336, prix_livraison:5,     reduction:0,   prix_total:341   },
+        { numero_commande:'VG-2025-0047', client_prenom:'Paul',   client_nom:'Roux',    client_email:'paul@ex.fr',   client_gsm:'+33699001122', menu_titre:'Menu Vegan Terre & Saveurs',   menu_id:5, date_prestation:'2025-07-04', heure_livraison:'12:00', adresse_livraison:'15 rue du Palais Gallien, 33000 Bordeaux',nombre_personnes:6,  statut:'livre',               prix_menu:132, prix_livraison:5,     reduction:0,   prix_total:137   },
+      ];
+    }
+
+    function demoMenus() {
+      return [
+        { menu_id:1, titre:'Menu de Noël Prestige',        theme:'Noël',      regime:'classique',  nombre_personne_minimum:8,  prix_par_personne:42, quantite_restante:3,  description:'Foie gras, chapon, bûche glacée.' },
+        { menu_id:2, titre:'Brunch de Pâques',             theme:'Pâques',    regime:'classique',  nombre_personne_minimum:6,  prix_par_personne:28, quantite_restante:8,  description:'Viennoiseries, œufs cocotte, saumon.' },
+        { menu_id:3, titre:'Menu Végétarien Printemps',    theme:'classique', regime:'végétarien', nombre_personne_minimum:4,  prix_par_personne:24, quantite_restante:12, description:'Velouté d\'asperges, risotto.' },
+        { menu_id:4, titre:'Cocktail Dinatoire Événement', theme:'évènement', regime:'classique',  nombre_personne_minimum:20, prix_par_personne:35, quantite_restante:5,  description:'45 pièces / personne.' },
+        { menu_id:5, titre:'Menu Vegan Terre & Saveurs',   theme:'classique', regime:'vegan',      nombre_personne_minimum:4,  prix_par_personne:22, quantite_restante:15, description:'Gaspacho, tajine légumes, mousse chocolat.' },
+      ];
+    }
+  </script>
+
+</body>
+</html>

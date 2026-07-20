@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nos menus – Vite & Gourmand</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nuit:    '#1A1208',
+            creme:   '#F5F0E8',
+            rouille: '#D4521A',
+            herbe:   '#4A7C59',
+            safran:  '#F0C060',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            body:    ['Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background-color: #F5F0E8; color: #1A1208; }
+
+    /* Skeleton loader */
+    .skeleton {
+      background: linear-gradient(90deg, #e8e3d8 25%, #f0ebe0 50%, #e8e3d8 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 2px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Badge thème */
+    .badge-noel      { background:#1e3a5f; color:#a8d8f0; }
+    .badge-paques    { background:#3b5e35; color:#b8e0a8; }
+    .badge-classique { background:#4a3728; color:#e8c89a; }
+    .badge-evenement { background:#5e2d5e; color:#e0a8e0; }
+
+    /* Carte hover */
+    .menu-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .menu-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(26,18,8,0.12); }
+
+    /* Filtre actif */
+    .filter-active { background: #D4521A; color: white; border-color: #D4521A; }
+
+    /* Star */
+    .star { color: #F0C060; }
+  </style>
+</head>
+
+<body x-data="menusApp()" x-init="init()">
+
+  <!-- ═══════════════════════════════════════════
+       NAVIGATION (identique à l'accueil)
+  ══════════════════════════════════════════════ -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-nuit/95 backdrop-blur-sm">
+    <nav class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between" aria-label="Navigation principale">
+      <a href="/" class="font-display text-xl font-bold text-creme tracking-wide">
+        Vite <span class="text-rouille">&</span> Gourmand
+      </a>
+      <ul class="hidden md:flex items-center gap-8 text-sm font-medium text-creme/80">
+        <li><a href="/"        class="hover:text-safran transition-colors">Accueil</a></li>
+        <li><a href="/menus"   class="text-safran font-semibold" aria-current="page">Nos menus</a></li>
+        <li><a href="/contact" class="hover:text-safran transition-colors">Contact</a></li>
+        <li>
+          <a href="/connexion" class="bg-rouille text-white px-4 py-2 rounded-sm hover:bg-rouille/80 transition-colors font-semibold">
+            Connexion
+          </a>
+        </li>
+      </ul>
+      <button @click="menuOpen = !menuOpen" class="md:hidden text-creme focus:outline-none focus:ring-2 focus:ring-safran rounded"
+              :aria-expanded="menuOpen.toString()" aria-controls="mobile-menu" aria-label="Ouvrir le menu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path x-show="!menuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          <path x-show="menuOpen"  stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </nav>
+    <div id="mobile-menu" x-show="menuOpen" x-transition class="md:hidden bg-nuit border-t border-white/10 px-6 pb-4">
+      <ul class="flex flex-col gap-4 text-creme/80 text-sm font-medium pt-4">
+        <li><a href="/"        @click="menuOpen=false" class="hover:text-safran transition-colors">Accueil</a></li>
+        <li><a href="/menus"   class="text-safran font-semibold">Nos menus</a></li>
+        <li><a href="/contact" @click="menuOpen=false" class="hover:text-safran transition-colors">Contact</a></li>
+        <li><a href="/connexion" class="inline-block bg-rouille text-white px-4 py-2 rounded-sm font-semibold">Connexion</a></li>
+      </ul>
+    </div>
+  </header>
+
+
+  <!-- ═══════════════════════════════════════════
+       EN-TÊTE PAGE
+  ══════════════════════════════════════════════ -->
+  <section class="bg-nuit pt-32 pb-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <p class="text-safran text-sm font-semibold tracking-[0.2em] uppercase mb-3">Découvrez</p>
+      <h1 class="font-display text-5xl md:text-6xl font-black text-creme mb-4">Nos menus</h1>
+      <p class="text-creme/60 text-lg max-w-xl">
+        Des formules pensées pour chaque occasion, livrées avec soin à Bordeaux et ses alentours.
+      </p>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       FILTRES
+  ══════════════════════════════════════════════ -->
+  <section class="bg-white border-b border-nuit/10 sticky top-[72px] z-40 shadow-sm" aria-label="Filtres de recherche">
+    <div class="max-w-6xl mx-auto px-6 py-4">
+
+      <!-- Ligne 1 : filtres rapides par thème et régime -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <!-- Thèmes -->
+        <fieldset>
+          <legend class="sr-only">Filtrer par thème</legend>
+          <div class="flex flex-wrap gap-2">
+            <template x-for="theme in themes" :key="theme.value">
+              <button
+                @click="toggleFiltre('theme', theme.value)"
+                :class="filtres.theme === theme.value ? 'filter-active' : 'bg-creme text-nuit border-nuit/20 hover:border-rouille'"
+                class="border px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+                :aria-pressed="(filtres.theme === theme.value).toString()"
+              >
+                <span aria-hidden="true" x-text="theme.emoji"></span>
+                <span x-text="theme.label" class="ml-1"></span>
+              </button>
+            </template>
+          </div>
+        </fieldset>
+
+        <div class="w-px bg-nuit/10 mx-1 hidden sm:block" aria-hidden="true"></div>
+
+        <!-- Régimes -->
+        <fieldset>
+          <legend class="sr-only">Filtrer par régime</legend>
+          <div class="flex flex-wrap gap-2">
+            <template x-for="regime in regimes" :key="regime.value">
+              <button
+                @click="toggleFiltre('regime', regime.value)"
+                :class="filtres.regime === regime.value ? 'filter-active' : 'bg-creme text-nuit border-nuit/20 hover:border-rouille'"
+                class="border px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+                :aria-pressed="(filtres.regime === regime.value).toString()"
+              >
+                <span aria-hidden="true" x-text="regime.emoji"></span>
+                <span x-text="regime.label" class="ml-1"></span>
+              </button>
+            </template>
+          </div>
+        </fieldset>
+      </div>
+
+      <!-- Ligne 2 : filtres prix et personnes -->
+      <div class="flex flex-wrap gap-4 items-end">
+
+        <!-- Prix max -->
+        <div class="flex flex-col gap-1 min-w-[160px]">
+          <label for="prix-max" class="text-xs font-semibold text-nuit/60 uppercase tracking-wide">
+            Prix max : <span class="text-rouille font-bold" x-text="filtres.prixMax > 0 ? filtres.prixMax + ' €' : 'Tous'"></span>
+          </label>
+          <input
+            id="prix-max"
+            type="range"
+            min="0" max="500" step="10"
+            x-model.number="filtres.prixMax"
+            @input="appliquerFiltres()"
+            class="accent-rouille w-full cursor-pointer"
+            :aria-valuenow="filtres.prixMax"
+            aria-valuemin="0"
+            aria-valuemax="500"
+          />
+        </div>
+
+        <!-- Fourchette de prix -->
+        <div class="flex items-center gap-2">
+          <div class="flex flex-col gap-1">
+            <label for="prix-min-input" class="text-xs font-semibold text-nuit/60 uppercase tracking-wide">Prix min (€)</label>
+            <input id="prix-min-input" type="number" min="0" placeholder="0"
+                   x-model.number="filtres.prixMin" @input="appliquerFiltres()"
+                   class="w-24 border border-nuit/20 rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rouille bg-creme" />
+          </div>
+          <span class="text-nuit/40 mt-5" aria-hidden="true">–</span>
+          <div class="flex flex-col gap-1">
+            <label for="prix-max-input" class="text-xs font-semibold text-nuit/60 uppercase tracking-wide">Prix max (€)</label>
+            <input id="prix-max-input" type="number" min="0" placeholder="500"
+                   x-model.number="filtres.prixMaxInput" @input="appliquerFiltres()"
+                   class="w-24 border border-nuit/20 rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rouille bg-creme" />
+          </div>
+        </div>
+
+        <!-- Personnes min -->
+        <div class="flex flex-col gap-1">
+          <label for="personnes-min" class="text-xs font-semibold text-nuit/60 uppercase tracking-wide">Personnes min</label>
+          <input id="personnes-min" type="number" min="1" placeholder="1"
+                 x-model.number="filtres.personnesMin" @input="appliquerFiltres()"
+                 class="w-28 border border-nuit/20 rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rouille bg-creme" />
+        </div>
+
+        <!-- Reset -->
+        <button
+          @click="resetFiltres()"
+          x-show="filtresActifs"
+          class="ml-auto text-sm text-rouille font-semibold hover:underline flex items-center gap-1 mt-4"
+          aria-label="Réinitialiser tous les filtres"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Réinitialiser
+        </button>
+      </div>
+
+      <!-- Résumé résultats -->
+      <p class="mt-3 text-sm text-nuit/50" role="status" aria-live="polite">
+        <span x-text="menusFiltres.length"></span> menu<span x-show="menusFiltres.length > 1">s</span> affiché<span x-show="menusFiltres.length > 1">s</span>
+        <span x-show="filtresActifs" class="text-rouille"> · filtres actifs</span>
+      </p>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       GRILLE MENUS
+  ══════════════════════════════════════════════ -->
+  <main class="max-w-6xl mx-auto px-6 py-12" id="main-content">
+
+    <!-- État : chargement -->
+    <div x-show="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Chargement des menus" aria-busy="true">
+      <template x-for="i in 6" :key="i">
+        <div class="bg-white rounded-sm overflow-hidden shadow-sm border border-nuit/5">
+          <div class="skeleton h-48 w-full"></div>
+          <div class="p-6 space-y-3">
+            <div class="skeleton h-5 w-3/4"></div>
+            <div class="skeleton h-4 w-full"></div>
+            <div class="skeleton h-4 w-2/3"></div>
+            <div class="skeleton h-10 w-full mt-4"></div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- État : erreur -->
+    <div x-show="erreur && !loading" class="text-center py-20" role="alert">
+      <p class="text-4xl mb-4" aria-hidden="true">⚠️</p>
+      <p class="font-display text-2xl font-bold text-nuit mb-2">Impossible de charger les menus</p>
+      <p class="text-nuit/50 mb-6" x-text="erreur"></p>
+      <button @click="chargerMenus()" class="bg-rouille text-white px-6 py-3 rounded-sm font-semibold hover:bg-rouille/80 transition-colors">
+        Réessayer
+      </button>
+    </div>
+
+    <!-- État : aucun résultat après filtre -->
+    <div x-show="!loading && !erreur && menusFiltres.length === 0" class="text-center py-20">
+      <p class="text-5xl mb-4" aria-hidden="true">🔍</p>
+      <p class="font-display text-2xl font-bold text-nuit mb-2">Aucun menu ne correspond</p>
+      <p class="text-nuit/50 mb-6">Essayez d'ajuster vos filtres pour voir plus de résultats.</p>
+      <button @click="resetFiltres()" class="bg-rouille text-white px-6 py-3 rounded-sm font-semibold hover:bg-rouille/80 transition-colors">
+        Voir tous les menus
+      </button>
+    </div>
+
+    <!-- Grille menus -->
+    <div
+      x-show="!loading && !erreur && menusFiltres.length > 0"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+      role="list"
+      aria-label="Liste des menus disponibles"
+    >
+      <template x-for="menu in menusFiltres" :key="menu.menu_id">
+        <article
+          class="menu-card bg-white rounded-sm overflow-hidden shadow-sm border border-nuit/5 flex flex-col"
+          role="listitem"
+        >
+          <!-- Image / galerie -->
+          <div class="relative h-48 bg-nuit/10 overflow-hidden">
+            <img
+              :src="menu.image_url || '/assets/img/menu-placeholder.jpg'"
+              :alt="'Photo du menu ' + menu.titre"
+              class="w-full h-full object-cover"
+              loading="lazy"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
+            />
+            <!-- Fallback si pas d'image -->
+            <div class="absolute inset-0 hidden items-center justify-center bg-nuit/5 text-5xl" aria-hidden="true">🍽️</div>
+
+            <!-- Badge thème -->
+            <span
+              class="absolute top-3 left-3 text-xs font-semibold px-2 py-1 rounded-full"
+              :class="badgeTheme(menu.theme)"
+              x-text="menu.theme"
+            ></span>
+
+            <!-- Badge stock faible -->
+            <span
+              x-show="menu.quantite_restante !== null && menu.quantite_restante <= 3 && menu.quantite_restante > 0"
+              class="absolute top-3 right-3 bg-rouille text-white text-xs font-bold px-2 py-1 rounded-full"
+              :aria-label="'Plus que ' + menu.quantite_restante + ' disponible(s)'"
+            >
+              Plus que <span x-text="menu.quantite_restante"></span> !
+            </span>
+
+            <!-- Épuisé -->
+            <div
+              x-show="menu.quantite_restante === 0"
+              class="absolute inset-0 bg-nuit/60 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg tracking-wide uppercase">Épuisé</span>
+            </div>
+          </div>
+
+          <!-- Contenu -->
+          <div class="p-6 flex flex-col flex-1">
+
+            <!-- Titre + régime -->
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <h2 class="font-display text-xl font-bold text-nuit leading-tight" x-text="menu.titre"></h2>
+              <span class="text-lg flex-shrink-0" :aria-label="'Régime : ' + menu.regime" x-text="emojiRegime(menu.regime)"></span>
+            </div>
+
+            <!-- Description -->
+            <p class="text-nuit/60 text-sm leading-relaxed mb-4 flex-1 line-clamp-3" x-text="menu.description"></p>
+
+            <!-- Infos clés -->
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-5 border-t border-nuit/8 pt-4">
+              <div>
+                <dt class="text-nuit/40 text-xs uppercase font-semibold tracking-wide">Personnes min.</dt>
+                <dd class="font-semibold text-nuit mt-0.5" x-text="menu.nombre_personne_minimum + ' pers.'"></dd>
+              </div>
+              <div>
+                <dt class="text-nuit/40 text-xs uppercase font-semibold tracking-wide">Prix de base</dt>
+                <dd class="font-bold text-rouille text-base mt-0.5" x-text="formatPrix(menu.prix_par_personne * menu.nombre_personne_minimum)"></dd>
+              </div>
+              <div class="col-span-2">
+                <dt class="text-nuit/40 text-xs uppercase font-semibold tracking-wide">Prix / personne</dt>
+                <dd class="font-semibold text-nuit mt-0.5" x-text="formatPrix(menu.prix_par_personne) + ' / pers.'"></dd>
+              </div>
+            </dl>
+
+            <!-- Allergènes si présents -->
+            <div x-show="menu.allergenes && menu.allergenes.length > 0" class="mb-4">
+              <p class="text-xs text-nuit/40 uppercase font-semibold tracking-wide mb-1">Allergènes</p>
+              <div class="flex flex-wrap gap-1">
+                <template x-for="a in menu.allergenes" :key="a">
+                  <span class="bg-safran/20 text-nuit text-xs px-2 py-0.5 rounded-full" x-text="a"></span>
+                </template>
+              </div>
+            </div>
+
+            <!-- Bouton détail -->
+            <a
+              :href="'/menus/' + menu.menu_id"
+              class="block w-full text-center bg-nuit text-creme font-semibold py-3 rounded-sm hover:bg-rouille transition-colors mt-auto focus:outline-none focus:ring-2 focus:ring-rouille focus:ring-offset-2"
+              :aria-label="'Voir le détail du menu ' + menu.titre"
+              :class="menu.quantite_restante === 0 ? 'opacity-50 pointer-events-none' : ''"
+            >
+              Voir le menu →
+            </a>
+          </div>
+        </article>
+      </template>
+    </div>
+  </main>
+
+
+  <!-- ═══════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════ -->
+  <footer class="bg-nuit text-creme/60 py-16 mt-8" role="contentinfo">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid md:grid-cols-3 gap-12 mb-12">
+        <div>
+          <p class="font-display text-2xl font-bold text-creme mb-3">
+            Vite <span class="text-rouille">&</span> Gourmand
+          </p>
+          <p class="text-sm leading-relaxed">Traiteur artisanal bordelais depuis 1999.<br/>Bordeaux & alentours.</p>
+        </div>
+        <div>
+          <h3 class="text-creme font-semibold mb-4 text-sm tracking-wider uppercase">Horaires d'ouverture</h3>
+          <table class="text-sm w-full" aria-label="Horaires d'ouverture">
+            <tbody>
+              <template x-for="h in horaires" :key="h.jour">
+                <tr class="border-b border-white/5">
+                  <td class="py-2 pr-4 font-medium text-creme/80" x-text="h.jour"></td>
+                  <td class="py-2 text-right" x-text="h.heure"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3 class="text-creme font-semibold mb-4 text-sm tracking-wider uppercase">Navigation</h3>
+          <ul class="space-y-3 text-sm">
+            <li><a href="/"        class="hover:text-safran transition-colors">Accueil</a></li>
+            <li><a href="/menus"   class="text-safran font-semibold">Nos menus</a></li>
+            <li><a href="/contact" class="hover:text-safran transition-colors">Contact</a></li>
+            <li><a href="/connexion" class="hover:text-safran transition-colors">Connexion</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
+        <p>© 2025 Vite & Gourmand. Tous droits réservés.</p>
+        <div class="flex gap-6">
+          <a href="/mentions-legales" class="hover:text-safran transition-colors">Mentions légales</a>
+          <a href="/cgv"              class="hover:text-safran transition-colors">Conditions générales de vente</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ═══════════════════════════════════════════
+       SCRIPTS
+  ══════════════════════════════════════════════ -->
+  <script>
+    // ─── Configuration API ───────────────────────────────────────────────────
+    // Remplace cette URL par le vrai endpoint PHP quand le back est prêt
+    const API_BASE = '/api';   // ex: 'https://ton-domaine.fr/api'
+
+    // ─── Application principale ──────────────────────────────────────────────
+    function menusApp() {
+      return {
+        // État
+        menuOpen:     false,
+        loading:      true,
+        erreur:       null,
+        menus:        [],        // tous les menus reçus de l'API
+        menusFiltres: [],        // menus après application des filtres
+
+        // Options de filtres
+        themes: [
+          { value: null,          label: 'Tous',       emoji: '🍽️' },
+          { value: 'Noël',        label: 'Noël',       emoji: '🎄' },
+          { value: 'Pâques',      label: 'Pâques',     emoji: '🐣' },
+          { value: 'classique',   label: 'Classique',  emoji: '🥗' },
+          { value: 'évènement',   label: 'Événement',  emoji: '🎉' },
+        ],
+        regimes: [
+          { value: null,          label: 'Tous',       emoji: '🍴' },
+          { value: 'classique',   label: 'Classique',  emoji: '🥩' },
+          { value: 'végétarien',  label: 'Végétarien', emoji: '🥕' },
+          { value: 'vegan',       label: 'Vegan',      emoji: '🌱' },
+        ],
+
+        // Valeurs des filtres
+        filtres: {
+          theme:       null,
+          regime:      null,
+          prixMax:     0,       // 0 = pas de limite (slider)
+          prixMin:     null,
+          prixMaxInput: null,
+          personnesMin: null,
+        },
+
+        // Horaires footer
+        horaires: [
+          { jour: 'Lundi',    heure: '08h00 – 19h00' },
+          { jour: 'Mardi',    heure: '08h00 – 19h00' },
+          { jour: 'Mercredi', heure: '08h00 – 19h00' },
+          { jour: 'Jeudi',    heure: '08h00 – 19h00' },
+          { jour: 'Vendredi', heure: '08h00 – 20h00' },
+          { jour: 'Samedi',   heure: '09h00 – 18h00' },
+          { jour: 'Dimanche', heure: 'Fermé' },
+        ],
+
+        // ── Init ──────────────────────────────────────────────────────────────
+        init() {
+          this.chargerMenus();
+        },
+
+        // ── Chargement via fetch() → API PHP ─────────────────────────────────
+        async chargerMenus() {
+          this.loading = true;
+          this.erreur  = null;
+
+          try {
+            /*
+             * GET /api/menus
+             * Réponse attendue (PHP JSON) :
+             * [
+             *   {
+             *     "menu_id": 1,
+             *     "titre": "Menu de Noël",
+             *     "description": "...",
+             *     "theme": "Noël",
+             *     "regime": "classique",
+             *     "nombre_personne_minimum": 8,
+             *     "prix_par_personne": 35.00,
+             *     "quantite_restante": 5,
+             *     "image_url": "/uploads/menus/noel.jpg",
+             *     "allergenes": ["Gluten", "Lactose"]
+             *   },
+             *   ...
+             * ]
+             */
+            const response = await fetch(`${API_BASE}/menus`, {
+              method: 'GET',
+              headers: {
+                'Accept':       'application/json',
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',   // envoie le cookie de session PHP
+            });
+
+            if (!response.ok) {
+              // Gestion des codes HTTP d'erreur
+              if (response.status === 401) throw new Error('Non autorisé. Veuillez vous connecter.');
+              if (response.status === 500) throw new Error('Erreur serveur. Réessayez dans quelques instants.');
+              throw new Error(`Erreur HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Validation basique de la réponse
+            if (!Array.isArray(data)) throw new Error('Format de réponse inattendu.');
+
+            this.menus = data;
+            this.appliquerFiltres();
+
+          } catch (err) {
+            // Réseau hors ligne ou erreur de parsing
+            if (err.name === 'TypeError') {
+              this.erreur = 'Impossible de contacter le serveur. Vérifiez votre connexion.';
+            } else {
+              this.erreur = err.message || 'Une erreur inconnue est survenue.';
+            }
+
+            // ── MODE DÉMO (à supprimer quand le back PHP est prêt) ──────────
+            // Données fictives pour développer et tester le front sans back-end
+            this.menus = donneesDemoMenus();
+            this.erreur = null;   // on masque l'erreur en mode démo
+            this.appliquerFiltres();
+            // ────────────────────────────────────────────────────────────────
+
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        // ── Application des filtres (sans rechargement de page) ───────────────
+        appliquerFiltres() {
+          this.menusFiltres = this.menus.filter(menu => {
+
+            // Filtre thème
+            if (this.filtres.theme && menu.theme !== this.filtres.theme) return false;
+
+            // Filtre régime
+            if (this.filtres.regime && menu.regime !== this.filtres.regime) return false;
+
+            // Filtre prix max (slider)
+            if (this.filtres.prixMax > 0) {
+              const prixTotal = menu.prix_par_personne * menu.nombre_personne_minimum;
+              if (prixTotal > this.filtres.prixMax) return false;
+            }
+
+            // Filtre fourchette de prix
+            const prixTotal = menu.prix_par_personne * menu.nombre_personne_minimum;
+            if (this.filtres.prixMin && prixTotal < this.filtres.prixMin) return false;
+            if (this.filtres.prixMaxInput && prixTotal > this.filtres.prixMaxInput) return false;
+
+            // Filtre personnes minimum
+            if (this.filtres.personnesMin && menu.nombre_personne_minimum < this.filtres.personnesMin) return false;
+
+            return true;
+          });
+        },
+
+        // ── Toggle filtre bouton (thème / régime) ─────────────────────────────
+        toggleFiltre(type, valeur) {
+          // Si déjà actif → désactiver
+          this.filtres[type] = this.filtres[type] === valeur ? null : valeur;
+          this.appliquerFiltres();
+        },
+
+        // ── Reset tous les filtres ────────────────────────────────────────────
+        resetFiltres() {
+          this.filtres = { theme: null, regime: null, prixMax: 0, prixMin: null, prixMaxInput: null, personnesMin: null };
+          this.appliquerFiltres();
+        },
+
+        // ── Filtres actifs ? (pour afficher le bouton Reset) ─────────────────
+        get filtresActifs() {
+          return this.filtres.theme || this.filtres.regime
+              || this.filtres.prixMax > 0 || this.filtres.prixMin
+              || this.filtres.prixMaxInput || this.filtres.personnesMin;
+        },
+
+        // ── Helpers d'affichage ───────────────────────────────────────────────
+        formatPrix(valeur) {
+          return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(valeur);
+        },
+
+        badgeTheme(theme) {
+          const map = {
+            'Noël':       'badge-noel',
+            'Pâques':     'badge-paques',
+            'classique':  'badge-classique',
+            'évènement':  'badge-evenement',
+          };
+          return map[theme] || 'badge-classique';
+        },
+
+        emojiRegime(regime) {
+          const map = { 'classique': '🥩', 'végétarien': '🥕', 'vegan': '🌱' };
+          return map[regime] || '🍴';
+        },
+      };
+    }
+
+    // ─── Données de démo (simulant la réponse PHP) ───────────────────────────
+    // À supprimer dès que l'API PHP /api/menus est opérationnelle
+    function donneesDemoMenus() {
+      return [
+        {
+          menu_id: 1,
+          titre: "Menu de Noël Prestige",
+          description: "Un voyage gustatif pour les fêtes : foie gras maison, chapon rôti aux cèpes et bûche glacée aux marrons.",
+          theme: "Noël",
+          regime: "classique",
+          nombre_personne_minimum: 8,
+          prix_par_personne: 42,
+          quantite_restante: 3,
+          image_url: null,
+          allergenes: ["Gluten", "Lactose", "Œufs"]
+        },
+        {
+          menu_id: 2,
+          titre: "Brunch de Pâques",
+          description: "Viennoiseries, œufs cocotte, saumon fumé et desserts printaniers pour un dimanche en famille.",
+          theme: "Pâques",
+          regime: "classique",
+          nombre_personne_minimum: 6,
+          prix_par_personne: 28,
+          quantite_restante: 8,
+          image_url: null,
+          allergenes: ["Gluten", "Poisson"]
+        },
+        {
+          menu_id: 3,
+          titre: "Menu Végétarien Printemps",
+          description: "Velouté d'asperges, risotto aux légumes de saison et tarte fine aux fruits rouges. 100% végétarien.",
+          theme: "classique",
+          regime: "végétarien",
+          nombre_personne_minimum: 4,
+          prix_par_personne: 24,
+          quantite_restante: 12,
+          image_url: null,
+          allergenes: ["Lactose", "Gluten"]
+        },
+        {
+          menu_id: 4,
+          titre: "Cocktail Dinatoire Événement",
+          description: "45 pièces par personne : verrines, bruschettas, mini-burgers et mignardises. Idéal pour vos réceptions.",
+          theme: "évènement",
+          regime: "classique",
+          nombre_personne_minimum: 20,
+          prix_par_personne: 35,
+          quantite_restante: 5,
+          image_url: null,
+          allergenes: ["Gluten", "Crustacés", "Sulfites"]
+        },
+        {
+          menu_id: 5,
+          titre: "Menu Vegan Terre & Saveurs",
+          description: "Gaspacho de betterave, tajine de légumes aux épices et mousse au chocolat noir. Zéro produit animal.",
+          theme: "classique",
+          regime: "vegan",
+          nombre_personne_minimum: 4,
+          prix_par_personne: 22,
+          quantite_restante: 15,
+          image_url: null,
+          allergenes: ["Fruits à coque"]
+        },
+        {
+          menu_id: 6,
+          titre: "Repas de Noël Familial",
+          description: "Le grand classique : velouté de potiron, dinde farcie et profiteroles pour régaler petits et grands.",
+          theme: "Noël",
+          regime: "classique",
+          nombre_personne_minimum: 10,
+          prix_par_personne: 32,
+          quantite_restante: 0,
+          image_url: null,
+          allergenes: ["Gluten", "Lactose", "Céleri"]
+        },
+      ];
+    }
+  </script>
+
+</body>
+</html>

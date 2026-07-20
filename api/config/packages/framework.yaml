@@ -1,0 +1,49 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+
+    # ═══════════════════════════════════════════════════════════
+    # Sessions PHP — stockées côté serveur, cookie HttpOnly
+    # ═══════════════════════════════════════════════════════════
+    session:
+        # Storage : fichier par défaut. En prod : Redis / DB pour scalabilité.
+        handler_id: null
+        cookie_secure:   '%env(bool:COOKIE_SECURE)%'
+        cookie_samesite: 'lax'
+        cookie_httponly: true         # Protège contre XSS (JS ne peut pas lire le cookie)
+        cookie_lifetime: 0            # Cookie de session (supprimé à la fermeture navigateur)
+        gc_maxlifetime:  7200         # 2 h d'inactivité max côté serveur
+        name: VG_SESSID
+        storage_factory_id: session.storage.factory.native
+
+    # ═══════════════════════════════════════════════════════════
+    # Politique anti-attaque
+    # ═══════════════════════════════════════════════════════════
+    http_method_override: false
+    handle_all_throwables: true
+
+    # ═══════════════════════════════════════════════════════════
+    # Rate limiter — protection brute force et flood
+    # ═══════════════════════════════════════════════════════════
+    rate_limiter:
+        # Limite les tentatives de login (utilisé par login_throttling)
+        anonymous_api:
+            policy:   token_bucket
+            limit:    60
+            rate:     { interval: '1 minute', amount: 60 }
+
+        # Limite les envois du formulaire contact et mot-de-passe oublié
+        contact_form:
+            policy:   fixed_window
+            limit:    5
+            interval: '15 minutes'
+
+        password_reset:
+            policy:   fixed_window
+            limit:    3
+            interval: '15 minutes'
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file
