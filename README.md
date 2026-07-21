@@ -12,6 +12,14 @@
 
 ---
 
+## 🌍 Démo en ligne
+
+**🔗 [https://vitegourmandlm.alwaysdata.net](https://vitegourmandlm.alwaysdata.net)**
+
+Site déployé en production sur Alwaysdata (Paris) avec HTTPS Let's Encrypt et base PostgreSQL 17.
+
+---
+
 ## 🎯 Contexte
 
 Julie et José, 25 ans, lancent leur activité de traiteur artisanal à Bordeaux sous la marque **Vite & Gourmand**. Cette plateforme leur permet de présenter leurs menus, de gérer les commandes en ligne, de traiter la logistique côté employés et de piloter l'activité côté administration.
@@ -23,7 +31,7 @@ Julie et José, 25 ans, lancent leur activité de traiteur artisanal à Bordeaux
 ### 👤 Côté client
 - Consultation des menus avec **5 filtres dynamiques** (thème, régime, prix, nombre de personnes, disponibilité)
 - Inscription / connexion sécurisée (Argon2id, réinitialisation mot de passe)
-- Passage de commande avec calculs automatiques (réduction, frais de livraison Bordeaux/hors Bordeaux)
+- Passage de commande avec calculs automatiques (réduction 10% si commande > 500€, frais de livraison Bordeaux/hors Bordeaux)
 - Suivi de commande en temps réel via timeline visuelle
 - Dépôt d'avis après livraison
 - Formulaire de contact avec rate limiting
@@ -36,6 +44,8 @@ Julie et José, 25 ans, lancent leur activité de traiteur artisanal à Bordeaux
 
 ### 👑 Côté administrateur
 - Toutes les fonctionnalités employé
+- **Formulaire de création de plats** avec catégorisation (entrée / plat principal / dessert) et multi-sélection d'allergènes
+- **Formulaire de création de menus** composables avec plats groupés par catégorie, thèmes et régimes multi-sélectionnables
 - Création de comptes employés (avec envoi de mail pour définition du mot de passe)
 - **Tableau de bord statistiques** alimenté par MongoDB (avec fallback SQL automatique)
 - CA par menu, commandes par période, note moyenne, top clients
@@ -47,12 +57,13 @@ Julie et José, 25 ans, lancent leur activité de traiteur artisanal à Bordeaux
 | Couche | Technologie |
 |--------|-------------|
 | Back-end | Symfony 7 · PHP 8.2 |
-| BDD relationnelle | PostgreSQL 15 |
+| BDD relationnelle | PostgreSQL 15+ (17 en production) |
 | BDD NoSQL | MongoDB 6 *(avec fallback SQL)* |
 | ORM | Doctrine 3 |
 | Front-end | HTML5 · Tailwind CSS · Alpine.js |
 | Auth | Sessions PHP · Cookies HttpOnly · Argon2id |
 | Emails | Symfony Mailer · 8 templates Twig |
+| Hébergement | Alwaysdata (Paris) · HTTPS Let's Encrypt |
 
 ---
 
@@ -62,7 +73,7 @@ Julie et José, 25 ans, lancent leur activité de traiteur artisanal à Bordeaux
 vite-gourmand/
 ├── api/                        # Back-end Symfony 7
 │   ├── src/
-│   │   ├── Controller/         # 15 contrôleurs · 47 endpoints
+│   │   ├── Controller/         # 15 contrôleurs · 51 endpoints
 │   │   ├── Service/            # 15 services métier
 │   │   ├── Entity/             # 14 entités Doctrine
 │   │   ├── Repository/         # 12 repositories
@@ -78,11 +89,13 @@ vite-gourmand/
 │   ├── index.html              # Page d'accueil
 │   ├── menus.html              # Catalogue avec filtres
 │   ├── menu-detail.html        # Fiche menu détaillée
+│   ├── commande.html           # Formulaire de commande
 │   ├── connexion.html          # Inscription / connexion
 │   ├── contact.html            # Formulaire de contact
 │   ├── mon-espace.html         # Espace client
 │   ├── employe.html            # Interface employé
-│   └── admin.html              # Back-office admin
+│   ├── admin.html              # Back-office admin
+│   └── .htaccess               # Routing Apache (rewrites)
 │
 ├── docs/                       # Livrables documentaires ECF
 │   ├── VG-ManuelUtilisateur.pdf       (17 pages)
@@ -93,6 +106,17 @@ vite-gourmand/
 │
 └── README.md                   # Ce fichier
 ```
+
+---
+
+## 🌿 Organisation Git
+
+Le projet utilise un workflow **GitFlow simplifié** :
+
+- **`main`** — branche de production, contient uniquement du code stable et déployé.
+- **`develop`** — branche de développement, reçoit les évolutions avant fusion vers `main`.
+
+Ce workflow permet de garder `main` toujours dans un état déployable, tout en accueillant les modifications de dernière minute et les tests sur `develop`.
 
 ---
 
@@ -109,8 +133,8 @@ vite-gourmand/
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/<votre-user>/vite-gourmand.git
-cd vite-gourmand/api
+git clone https://github.com/LaurentMARCdev/ECR_Studi_Site_vite-et-gourmand.git
+cd ECR_Studi_Site_vite-et-gourmand/api
 
 # 2. Installer les dépendances PHP
 composer install
@@ -143,11 +167,14 @@ L'API tourne alors sur `http://127.0.0.1:8000`.
 
 ### Comptes de test
 
+Ces comptes sont disponibles sur la démo en ligne :
+
 | Rôle | Email | Mot de passe |
 |------|-------|--------------|
 | Client | `client@vitegourmand.fr` | `Client@Test2025` |
 | Employé | `employe@vitegourmand.fr` | `Employe@Test2025` |
-Les identifiants admins ne sont présents que dans le document en docx rendu en ligne sur Studi.
+
+Les identifiants administrateur sont fournis uniquement dans le document rendu sur Studi, pour des raisons de sécurité.
 
 ---
 
@@ -158,8 +185,12 @@ Deux stratégies documentées dans [`docs/VG-Deploiement.pdf`](docs/VG-Deploieme
 ### Option A — VPS + Docker (production robuste)
 Ubuntu 22.04 · Nginx · Docker Compose · Let's Encrypt · CI/CD GitHub Actions · Backups S3-compatible.
 
-### Option B — Alwaysdata (hébergement gratuit, choix retenu pour la démo ECF)
-Hébergement français (Paris), gratuit, sans carte bancaire. Configuration en ~30 min via l'interface d'administration. Utilisation du fallback SQL pour se passer de MongoDB en production, tout en conservant le code MongoDB dans le dépôt pour démontrer la compétence NoSQL.
+### Option B — Alwaysdata (choix retenu pour la démo ECF) ✅
+Hébergement français (Paris), gratuit, sans carte bancaire. Configuration en ~30 min via l'interface d'administration.
+
+**Site en production** : [https://vitegourmandlm.alwaysdata.net](https://vitegourmandlm.alwaysdata.net)
+
+Le déploiement utilise le fallback SQL pour se passer de MongoDB en production, tout en conservant le code MongoDB dans le dépôt pour démontrer la compétence NoSQL. Le routing Apache (`.htaccess`) gère les URLs propres (`/menus/{id}`, `/commande`) et le fallback vers Symfony pour les endpoints API.
 
 ---
 
@@ -216,12 +247,27 @@ Typographie : **Playfair Display** (titres) + **Inter** (corps).
 - **8 templates Twig** transactionnels (confirmation, changement de statut, invitation avis…)
 - **Enums PHP 8.2** pour tous les référentiels fermés (statuts, rôles, catégories)
 - Numérotation unique des commandes : format `VG-YYYY-NNNN`
+- **Formulaires composables** côté admin : création dynamique de plats et de menus avec chargement des référentiels (thèmes, régimes, allergènes) depuis l'API
 
 ---
 
 ## 📖 Documentation API
 
-47 endpoints REST documentés dans [`docs/VG-DocumentationTechnique.pdf`](docs/VG-DocumentationTechnique.pdf), section 5.
+**51 endpoints REST** documentés dans [`docs/VG-DocumentationTechnique.pdf`](docs/VG-DocumentationTechnique.pdf), section 5.
+
+Répartition par domaine :
+- 🔓 Auth (5 endpoints)
+- 🍽️ Menus publics (3 endpoints)
+- 📖 Référentiels (3 endpoints)
+- 👤 Utilisateur (4 endpoints)
+- 🛒 Commandes (2 endpoints)
+- ⭐ Avis (2 endpoints)
+- 👥 Employé (14 endpoints)
+- 👑 Admin (7 endpoints)
+- 📞 Contact (1 endpoint)
+- 🕐 Horaires publics (1 endpoint)
+- 📊 Stats (2 endpoints)
+- 🧾 Autres (7 endpoints)
 
 Une collection Postman est également disponible dans [`api/postman/`](api/postman/) pour tester l'ensemble des endpoints.
 
@@ -240,6 +286,12 @@ Projet réalisé dans le cadre de l'**Épreuve de Certification Finale** (ECF).
 Projet pédagogique — Tous droits réservés.
 Le contexte fictif *Vite & Gourmand* et son identité graphique sont créés à des fins de démonstration dans le cadre de la certification.
 
-## Prochains développement à prévoir:
+---
+
+## 🔮 Prochains développements à prévoir
+
 - Incorporer davantage de photographies pour rendre cette version moins impersonnelle.
 - Travailler sur de nouvelles mesures de sécurité pour rendre l'ensemble plus résilient.
+- Édition de menus : pré-remplir la liste des plats sélectionnés lors de la modification (actuellement, l'édition d'un menu nécessite de re-cocher les plats).
+- Intégrer un système de paiement en ligne (Stripe ou équivalent) pour compléter le workflow de commande.
+- Migrer les warnings de dépréciation Symfony 7.3/7.4 vers les nouvelles API recommandées.
