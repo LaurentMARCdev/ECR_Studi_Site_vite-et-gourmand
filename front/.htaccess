@@ -1,0 +1,35 @@
+DirectoryIndex index.html index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Rediriger la racine vers index.html
+    RewriteRule ^$ index.html [L]
+
+    # Si l'URL commence par /api → passer à Symfony
+    RewriteCond %{REQUEST_URI} ^/api
+    RewriteRule ^ index.php [QSA,L]
+
+    # /menus/123 → menu-detail.html (le JS lit l'ID depuis l'URL)
+    RewriteRule ^menus/[0-9]+/?$ /menu-detail.html [L]
+
+    # /commande → commande.html
+    RewriteRule ^commande/?$ /commande.html [L]
+
+    # Si le fichier existe tel quel → le servir
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # Si "quelque-chose.html" existe → le servir (permet /menus au lieu de /menus.html)
+    RewriteCond %{REQUEST_FILENAME}.html -f
+    RewriteRule ^(.*)$ $1.html [L]
+
+    # Fallback : Symfony
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    <IfModule mod_alias.c>
+        RedirectMatch 307 ^/$ /index.html
+    </IfModule>
+</IfModule>

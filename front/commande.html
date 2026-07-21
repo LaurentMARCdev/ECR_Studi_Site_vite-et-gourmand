@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finaliser votre commande – Vite & Gourmand</title>
+  <meta name="description" content="Finalisation de votre commande de menu traiteur Vite & Gourmand.">
+
+  <!-- Tailwind CSS via CDN (comme les autres pages du site) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Alpine.js (comme les autres pages du site) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Polices Google : Playfair Display (titres) + Inter (corps) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Configuration Tailwind avec palette Vite & Gourmand -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nuit:    '#1A1208',   // Fond sombre, texte principal
+            creme:   '#F5F0E8',   // Fond clair
+            rouille: '#D4521A',   // Accents principaux (boutons, liens)
+            herbe:   '#4A7C59',   // Succès, validation
+            safran:  '#F0C060',   // Attention, notifications
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            sans:    ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Application des polices sur la page */
+    body { font-family: 'Inter', sans-serif; background-color: #F5F0E8; color: #1A1208; }
+
+    /* Cache les éléments Alpine avant leur initialisation (évite le "flash" au chargement) */
+    [x-cloak] { display: none !important; }
+
+    /* Boutons désactivés : opacité réduite, curseur non-cliquable */
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Petit style pour la note de bas de récap */
+    .recap-item { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(26,18,8,0.08); }
+    .recap-item:last-child { border-bottom: none; }
+  </style>
+</head>
+
+<body x-data="commandeApp()" x-init="init()" x-cloak>
+
+  <!-- ══════════════════════════════════════
+       NAV STICKY (cohérente avec le reste du site)
+  ═══════════════════════════════════════ -->
+  <nav class="bg-nuit text-white sticky top-0 z-50 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo / marque -->
+        <a href="/index.html" class="font-display text-2xl font-bold">
+          Vite <span class="text-rouille">&</span> Gourmand
+        </a>
+        <!-- Liens principaux -->
+        <div class="hidden md:flex items-center gap-6 text-sm">
+          <a href="/index.html"    class="hover:text-rouille transition">Accueil</a>
+          <a href="/menus.html"    class="hover:text-rouille transition">Nos menus</a>
+          <a href="/contact.html"  class="hover:text-rouille transition">Contact</a>
+          <template x-if="utilisateur">
+            <a href="/mon-espace.html" class="hover:text-rouille transition">Mon espace</a>
+          </template>
+          <template x-if="!utilisateur">
+            <a href="/connexion.html" class="bg-rouille text-white px-4 py-2 rounded font-semibold hover:bg-rouille/80 transition">
+              Connexion
+            </a>
+          </template>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       HERO SOMBRE (cohérent avec le reste)
+  ═══════════════════════════════════════ -->
+  <header class="bg-nuit text-white py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 class="font-display text-4xl md:text-5xl font-bold">Finaliser votre commande</h1>
+      <p class="text-white/70 mt-2 max-w-2xl">
+        Quelques informations pour organiser votre prestation, et nous nous occupons du reste.
+      </p>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════
+       ÉCRAN DE CHARGEMENT INITIAL
+       Affiché tant que le menu n'est pas chargé
+  ═══════════════════════════════════════ -->
+  <div x-show="chargementInitial" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-rouille"></div>
+    <p class="text-nuit/60 mt-4">Chargement de votre commande…</p>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       ÉCRAN D'ERREUR (menu introuvable, params manquants...)
+  ═══════════════════════════════════════ -->
+  <div x-show="!chargementInitial && erreurInitiale" class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="bg-white rounded border border-red-200 p-8 text-center">
+      <div class="text-5xl mb-4">⚠️</div>
+      <h2 class="font-display text-2xl text-nuit mb-2">Impossible de charger la commande</h2>
+      <p class="text-nuit/70 mb-6" x-text="erreurInitiale"></p>
+      <a href="/menus.html" class="inline-block bg-rouille text-white font-semibold px-6 py-3 rounded hover:bg-rouille/80 transition">
+        Retour aux menus
+      </a>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       CONTENU PRINCIPAL — Formulaire + Récap
+       Affiché seulement si tout est OK
+  ═══════════════════════════════════════ -->
+  <main x-show="!chargementInitial && !erreurInitiale && menu" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+      <!-- ────────────────────────────────
+           COLONNE GAUCHE : FORMULAIRE (2/3)
+      ──────────────────────────────── -->
+      <section class="lg:col-span-2 bg-white rounded border border-nuit/8 shadow-sm p-6 md:p-8"
+               aria-labelledby="titre-form">
+
+        <h2 id="titre-form" class="font-display text-2xl text-nuit mb-6">
+          Informations de livraison
+        </h2>
+
+        <form @submit.prevent="soumettre()" novalidate class="space-y-5">
+
+          <!-- ─── Adresse de livraison ─── -->
+          <div>
+            <label for="adresse" class="block text-sm font-semibold text-nuit mb-1">
+              Adresse de livraison *
+            </label>
+            <input id="adresse" type="text" x-model="form.adresseLivraison" required maxlength="255"
+                   placeholder="Ex : 12 rue de la Paix"
+                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-rouille">
+            <p x-show="erreurs.adresseLivraison" x-text="erreurs.adresseLivraison"
+               class="text-xs text-red-500 mt-1"></p>
+          </div>
+
+          <!-- ─── Ville ─── -->
+          <div>
+            <label for="ville" class="block text-sm font-semibold text-nuit mb-1">
+              Ville *
+            </label>
+            <input id="ville" type="text" x-model="form.villeLivraison" required maxlength="100"
+                   placeholder="Ex : Bordeaux"
+                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-rouille">
+            <p x-show="erreurs.villeLivraison" x-text="erreurs.villeLivraison"
+               class="text-xs text-red-500 mt-1"></p>
+          </div>
+
+          <!-- ─── Date de prestation + Heure ─── -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="date" class="block text-sm font-semibold text-nuit mb-1">
+                Date de prestation *
+              </label>
+              <!--
+                Contrainte min : la date doit être au moins J+15
+                (permet à l'équipe de préparer la prestation)
+              -->
+              <input id="date" type="date" x-model="form.datePrestation" required
+                     :min="dateMinimum"
+                     class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-rouille">
+              <p class="text-xs text-nuit/50 mt-1">Minimum 15 jours à l'avance</p>
+              <p x-show="erreurs.datePrestation" x-text="erreurs.datePrestation"
+                 class="text-xs text-red-500 mt-1"></p>
+            </div>
+            <div>
+              <label for="heure" class="block text-sm font-semibold text-nuit mb-1">
+                Heure de livraison souhaitée *
+              </label>
+              <input id="heure" type="time" x-model="form.heureLivraison" required
+                     class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-rouille">
+              <p x-show="erreurs.heureLivraison" x-text="erreurs.heureLivraison"
+                 class="text-xs text-red-500 mt-1"></p>
+            </div>
+          </div>
+
+          <!-- ─── Prêt de matériel ─── -->
+          <div class="border border-nuit/10 rounded p-4 bg-creme/40">
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" x-model="form.pretMateriel"
+                     class="mt-1 rounded border-gray-300 text-rouille focus:ring-rouille">
+              <div>
+                <p class="font-semibold text-nuit text-sm">Prêt de matériel</p>
+                <p class="text-xs text-nuit/60 mt-1">
+                  Nous vous prêtons plats, couverts et verres pour votre prestation.
+                  Prévoyez leur retour propre sous 72h après l'événement.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <!-- ─── Message d'erreur global ─── -->
+          <div x-show="erreurs.global" class="bg-red-50 border border-red-200 rounded p-4">
+            <p class="text-sm text-red-700 font-medium" x-text="erreurs.global"></p>
+          </div>
+
+          <!-- ─── Bouton "Confirmer" ─── -->
+          <div class="pt-4 border-t border-nuit/8">
+            <button type="submit" :disabled="chargement"
+                    class="w-full bg-rouille text-white font-semibold px-6 py-3 rounded hover:bg-rouille/80 transition">
+              <span x-show="!chargement">Confirmer ma commande</span>
+              <span x-show="chargement">Envoi en cours…</span>
+            </button>
+            <p class="text-xs text-nuit/50 mt-3 text-center">
+              En confirmant, vous acceptez nos conditions générales de vente.
+              Un e-mail de confirmation vous sera envoyé.
+            </p>
+          </div>
+
+        </form>
+      </section>
+
+      <!-- ────────────────────────────────
+           COLONNE DROITE : RÉCAPITULATIF (1/3)
+           Sticky pour rester visible au scroll
+      ──────────────────────────────── -->
+      <aside class="lg:col-span-1">
+        <div class="bg-nuit text-white rounded shadow-lg p-6 sticky top-24">
+
+          <h3 class="font-display text-xl mb-4">Récapitulatif</h3>
+
+          <!-- Titre du menu commandé -->
+          <div class="pb-4 border-b border-white/10">
+            <p class="text-white/50 text-xs uppercase tracking-wide mb-1">Menu choisi</p>
+            <p class="font-semibold" x-text="menu.titre"></p>
+            <template x-if="menu.themes && menu.themes.length > 0">
+              <p class="text-xs text-white/60 mt-1 capitalize">
+                Thème : <span x-text="menu.themes.join(', ')"></span>
+              </p>
+            </template>
+          </div>
+
+          <!-- Détail du prix -->
+          <div class="py-4 space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-white/70">
+                <span x-text="form.nombrePersonnes"></span> pers. × <span x-text="formatPrix(menu.prix_par_personne)"></span>
+              </span>
+              <span class="font-medium" x-text="formatPrix(sousTotalMenu)"></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/70">Livraison (estimation)</span>
+              <span class="font-medium" x-text="formatPrix(fraisLivraison)"></span>
+            </div>
+            <!-- Réduction 10% si total > 500€ -->
+            <template x-if="reductionAppliquee > 0">
+              <div class="flex justify-between text-safran">
+                <span>Réduction 10% (grande commande)</span>
+                <span>-<span x-text="formatPrix(reductionAppliquee)"></span></span>
+              </div>
+            </template>
+          </div>
+
+          <!-- Total -->
+          <div class="pt-4 border-t border-white/10">
+            <div class="flex justify-between items-baseline">
+              <span class="font-semibold">Total estimé</span>
+              <span class="font-display text-2xl text-rouille" x-text="formatPrix(totalFinal)"></span>
+            </div>
+            <p class="text-xs text-white/50 mt-2">
+              La distance et les frais définitifs seront confirmés après validation.
+            </p>
+          </div>
+
+          <!-- Composition rapide (les plats du menu) -->
+          <template x-if="menu.plats">
+            <div class="mt-6 pt-4 border-t border-white/10">
+              <p class="text-white/50 text-xs uppercase tracking-wide mb-2">Composition</p>
+              <ul class="space-y-1 text-xs text-white/80">
+                <template x-for="e in (menu.plats.entrees || [])" :key="e.plat_id">
+                  <li>• <span x-text="e.nom || e.titre"></span></li>
+                </template>
+                <template x-for="p in (menu.plats.plats_principaux || [])" :key="p.plat_id">
+                  <li>• <span x-text="p.nom || p.titre"></span></li>
+                </template>
+                <template x-for="d in (menu.plats.desserts || [])" :key="d.plat_id">
+                  <li>• <span x-text="d.nom || d.titre"></span></li>
+                </template>
+              </ul>
+            </div>
+          </template>
+
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════
+       TOAST (succès ou erreur)
+  ═══════════════════════════════════════ -->
+  <div x-show="toast.visible" x-transition
+       class="fixed bottom-6 right-6 z-50 px-6 py-4 rounded shadow-lg text-white font-medium"
+       :class="toast.type === 'succes' ? 'bg-herbe' : 'bg-red-600'">
+    <p x-text="toast.message"></p>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCRIPT — LOGIQUE ALPINE
+  ═══════════════════════════════════════ -->
+  <script>
+    // Base de l'API (toutes les requêtes commencent par /api)
+    const API_BASE = '/api';
+
+    /**
+     * Fonction principale Alpine — retourne l'état + les méthodes de la page.
+     * Alpine appelle init() au montage.
+     */
+    function commandeApp() {
+      return {
+        // ─── État général ───────────────────────────────────
+        chargementInitial: true,        // Vrai tant que la page n'est pas prête
+        erreurInitiale:    null,        // Message d'erreur bloquant (menu introuvable, non connecté...)
+        chargement:        false,       // Vrai pendant l'envoi du POST
+
+        utilisateur: null,              // Info utilisateur connecté (via /auth/me)
+        menu:        null,              // Détail du menu chargé (via /menus/{id})
+
+        // ─── Formulaire ─────────────────────────────────────
+        form: {
+          menuId:            0,
+          nombrePersonnes:   1,
+          datePrestation:    '',
+          heureLivraison:    '',
+          adresseLivraison:  '',
+          villeLivraison:    '',
+          pretMateriel:      false,
+        },
+        erreurs: {},                    // Erreurs de validation champ par champ (+ .global)
+
+        // ─── Toast (feedback UI) ────────────────────────────
+        toast: { visible: false, message: '', type: 'succes' },
+
+        // ─── Données calculées (getters Alpine) ─────────────
+
+        /**
+         * Date minimum acceptée (J+15) au format YYYY-MM-DD.
+         * Utilisée pour l'attribut `min` du champ date.
+         */
+        get dateMinimum() {
+          const d = new Date();
+          d.setDate(d.getDate() + 15);
+          return d.toISOString().split('T')[0];
+        },
+
+        /**
+         * Sous-total menu = prix par personne × nombre de personnes.
+         */
+        get sousTotalMenu() {
+          if (!this.menu) return 0;
+          return (this.menu.prix_par_personne || 0) * (this.form.nombrePersonnes || 0);
+        },
+
+        /**
+         * Frais de livraison (estimation front).
+         * Le back-end recalcule précisément selon la distance réelle.
+         * Formule stub : 5€ de base + estimation forfaitaire.
+         * Note : cette valeur est indicative, elle sera confirmée après validation.
+         */
+        get fraisLivraison() {
+          // Stub : 5€ fixes pour l'estimation front
+          // Le vrai calcul se fait côté back via DistanceCalculatorInterface
+          return 5;
+        },
+
+        /**
+         * Réduction : 10% appliqués si le sous-total menu > 500€.
+         */
+        get reductionAppliquee() {
+          return this.sousTotalMenu > 500 ? this.sousTotalMenu * 0.10 : 0;
+        },
+
+        /**
+         * Total final affiché : sous-total menu + livraison - réduction.
+         */
+        get totalFinal() {
+          return this.sousTotalMenu + this.fraisLivraison - this.reductionAppliquee;
+        },
+
+        // ─── Init : appelé au montage ───────────────────────
+        async init() {
+          // 1. Récupérer les paramètres URL (?menu=X&personnes=Y)
+          const params = new URLSearchParams(window.location.search);
+          const menuId = parseInt(params.get('menu'), 10);
+          const personnes = parseInt(params.get('personnes'), 10);
+
+          if (!menuId || menuId < 1) {
+            this.erreurInitiale = 'Aucun menu sélectionné. Retournez au catalogue pour choisir un menu.';
+            this.chargementInitial = false;
+            return;
+          }
+
+          this.form.menuId = menuId;
+          this.form.nombrePersonnes = personnes && personnes >= 1 ? personnes : 1;
+
+          // 2. Vérifier que l'utilisateur est connecté
+          await this.verifierConnexion();
+          if (this.erreurInitiale) {
+            this.chargementInitial = false;
+            return;
+          }
+
+          // 3. Charger les détails du menu
+          await this.chargerMenu();
+
+          // 4. Fin du chargement initial
+          this.chargementInitial = false;
+        },
+
+        /**
+         * Vérifie que l'utilisateur est connecté.
+         * Si non → redirection vers /connexion.html avec l'URL de retour.
+         */
+        async verifierConnexion() {
+          try {
+            const res = await fetch(`${API_BASE}/auth/me`, {
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) {
+              // Non connecté → redirection avec URL de retour
+              const retour = encodeURIComponent(window.location.pathname + window.location.search);
+              window.location.href = `/connexion.html?retour=${retour}`;
+              return;
+            }
+            this.utilisateur = await res.json();
+          } catch (e) {
+            this.erreurInitiale = 'Impossible de vérifier votre connexion. Vérifiez votre réseau.';
+          }
+        },
+
+        /**
+         * Charge les détails du menu via GET /api/menus/{id}.
+         */
+        async chargerMenu() {
+          try {
+            const res = await fetch(`${API_BASE}/menus/${this.form.menuId}`, {
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) {
+              if (res.status === 404) {
+                this.erreurInitiale = 'Ce menu n\'existe pas ou n\'est plus disponible.';
+              } else {
+                this.erreurInitiale = 'Erreur lors du chargement du menu.';
+              }
+              return;
+            }
+            this.menu = await res.json();
+
+            // Ajuster le nombre de personnes au minimum requis si nécessaire
+            if (this.menu.nombre_personne_minimum && this.form.nombrePersonnes < this.menu.nombre_personne_minimum) {
+              this.form.nombrePersonnes = this.menu.nombre_personne_minimum;
+            }
+          } catch (e) {
+            this.erreurInitiale = 'Erreur réseau lors du chargement du menu.';
+          }
+        },
+
+        /**
+         * Formate un prix en euros (2 décimales, symbole €).
+         */
+        formatPrix(montant) {
+          return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(montant || 0);
+        },
+
+        /**
+         * Affiche un toast de feedback (disparaît après 3s).
+         */
+        afficherToast(message, type = 'succes') {
+          this.toast = { visible: true, message, type };
+          setTimeout(() => { this.toast.visible = false; }, 3000);
+        },
+
+        /**
+         * Validation front minimale avant envoi au back.
+         * Retourne true si tout est OK, false sinon (et remplit this.erreurs).
+         */
+        validerFront() {
+          this.erreurs = {};
+          let ok = true;
+
+          if (!this.form.adresseLivraison || this.form.adresseLivraison.trim().length === 0) {
+            this.erreurs.adresseLivraison = 'L\'adresse de livraison est obligatoire.';
+            ok = false;
+          }
+          if (!this.form.villeLivraison || this.form.villeLivraison.trim().length === 0) {
+            this.erreurs.villeLivraison = 'La ville est obligatoire.';
+            ok = false;
+          }
+          if (!this.form.datePrestation) {
+            this.erreurs.datePrestation = 'La date de prestation est obligatoire.';
+            ok = false;
+          }
+          if (!this.form.heureLivraison) {
+            this.erreurs.heureLivraison = 'L\'heure de livraison est obligatoire.';
+            ok = false;
+          }
+
+          return ok;
+        },
+
+        /**
+         * Soumission du formulaire — envoie POST /api/commandes.
+         */
+        async soumettre() {
+          // 1. Validation front
+          if (!this.validerFront()) {
+            this.afficherToast('Veuillez corriger les champs invalides.', 'erreur');
+            return;
+          }
+
+          this.chargement = true;
+          try {
+            // 2. Construction du body (aligné sur CreerCommandeDTO)
+            const body = {
+              menuId:            this.form.menuId,
+              nombrePersonnes:   this.form.nombrePersonnes,
+              datePrestation:    this.form.datePrestation,
+              heureLivraison:    this.form.heureLivraison,
+              adresseLivraison:  this.form.adresseLivraison.trim(),
+              villeLivraison:    this.form.villeLivraison.trim(),
+              pretMateriel:      this.form.pretMateriel,
+            };
+
+            // 3. Envoi
+            const res = await fetch(`${API_BASE}/commandes`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept':       'application/json'
+              },
+              body: JSON.stringify(body)
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            // 4. Gestion de la réponse
+            if (!res.ok) {
+              // Erreur de validation : afficher les détails champ par champ
+              if (data.details && typeof data.details === 'object') {
+                this.erreurs = { ...this.erreurs, ...data.details };
+                this.erreurs.global = data.erreur || 'Données invalides. Vérifiez le formulaire.';
+              } else {
+                this.erreurs.global = data.erreur || 'Une erreur est survenue. Réessayez.';
+              }
+              this.afficherToast(this.erreurs.global, 'erreur');
+              return;
+            }
+
+            // 5. Succès !
+            this.afficherToast('Commande enregistrée ! Redirection…', 'succes');
+            // Petite pause pour laisser voir le toast puis redirection
+            setTimeout(() => {
+              window.location.href = '/mon-espace.html';
+            }, 1500);
+
+          } catch (e) {
+            this.erreurs.global = 'Erreur réseau : impossible d\'envoyer votre commande.';
+            this.afficherToast(this.erreurs.global, 'erreur');
+          } finally {
+            this.chargement = false;
+          }
+        },
+      };
+    }
+  </script>
+
+</body>
+</html>
