@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conditions générales de vente – Vite & Gourmand</title>
+  <meta name="description" content="Conditions générales de vente du site Vite & Gourmand, traiteur artisanal bordelais.">
+
+  <!-- Tailwind CSS via CDN (cohérent avec les autres pages) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Alpine.js (pour la nav réactive et la table des matières) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Polices Google : Playfair Display (titres) + Inter (corps) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Configuration Tailwind avec palette Vite & Gourmand -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nuit:    '#1A1208',   // Fond sombre, texte principal
+            creme:   '#F5F0E8',   // Fond clair
+            rouille: '#D4521A',   // Accents principaux
+            herbe:   '#4A7C59',   // Succès, validation
+            safran:  '#F0C060',   // Attention, notifications
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            sans:    ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Application des polices sur la page */
+    body { font-family: 'Inter', sans-serif; background-color: #F5F0E8; color: #1A1208; }
+
+    /* Cache les éléments Alpine avant leur initialisation */
+    [x-cloak] { display: none !important; }
+
+    /* Style spécifique pour la mise en forme du texte légal */
+    .legal-content h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1A1208;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid rgba(212, 82, 26, 0.2);
+      scroll-margin-top: 5rem;  /* Décalage pour la nav sticky lors de l'ancre */
+    }
+
+    .legal-content h3 {
+      font-weight: 600;
+      color: #1A1208;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .legal-content p {
+      margin-bottom: 1rem;
+      line-height: 1.7;
+      color: rgba(26, 18, 8, 0.8);
+    }
+
+    .legal-content ul {
+      list-style: disc;
+      margin-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .legal-content ul li {
+      margin-bottom: 0.5rem;
+      line-height: 1.6;
+      color: rgba(26, 18, 8, 0.8);
+    }
+
+    .legal-content a {
+      color: #D4521A;
+      text-decoration: underline;
+    }
+
+    .legal-content a:hover {
+      color: rgba(212, 82, 26, 0.7);
+    }
+
+    /* Encart d'information visuel */
+    .info-box {
+      background-color: rgba(240, 192, 96, 0.15);
+      border-left: 4px solid #F0C060;
+      padding: 1rem 1.25rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+    }
+
+    .warning-box {
+      background-color: rgba(212, 82, 26, 0.1);
+      border-left: 4px solid #D4521A;
+      padding: 1rem 1.25rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+    }
+
+    .success-box {
+      background-color: rgba(74, 124, 89, 0.1);
+      border-left: 4px solid #4A7C59;
+      padding: 1rem 1.25rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+    }
+
+    /* Table des matières */
+    .toc a {
+      display: block;
+      padding: 0.4rem 0.5rem;
+      color: rgba(26, 18, 8, 0.7);
+      text-decoration: none;
+      font-size: 0.875rem;
+      border-left: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .toc a:hover {
+      color: #D4521A;
+      border-left-color: #D4521A;
+      background-color: rgba(212, 82, 26, 0.05);
+    }
+  </style>
+</head>
+
+<body x-data="{ menuOpen: false, utilisateur: null }" x-cloak
+      x-init="fetch('/api/auth/me', { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(u => utilisateur = u)">
+
+  <!-- ══════════════════════════════════════
+       NAV STICKY (cohérente avec le reste du site)
+  ═══════════════════════════════════════ -->
+  <nav class="bg-nuit text-white sticky top-0 z-50 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo / marque -->
+        <a href="/index.html" class="font-display text-2xl font-bold">
+          Vite <span class="text-rouille">&</span> Gourmand
+        </a>
+
+        <!-- Liens desktop -->
+        <div class="hidden md:flex items-center gap-6 text-sm">
+          <a href="/index.html"   class="hover:text-rouille transition">Accueil</a>
+          <a href="/menus.html"   class="hover:text-rouille transition">Nos menus</a>
+          <a href="/contact.html" class="hover:text-rouille transition">Contact</a>
+          <template x-if="utilisateur">
+            <a href="/mon-espace.html" class="hover:text-rouille transition">Mon espace</a>
+          </template>
+          <template x-if="!utilisateur">
+            <a href="/connexion.html" class="bg-rouille text-white px-4 py-2 rounded font-semibold hover:bg-rouille/80 transition">
+              Connexion
+            </a>
+          </template>
+        </div>
+
+        <!-- Bouton menu mobile -->
+        <button @click="menuOpen = !menuOpen" class="md:hidden text-white" aria-label="Menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Menu mobile déroulant -->
+      <div x-show="menuOpen" x-transition class="md:hidden pb-4 space-y-2">
+        <a href="/index.html"   class="block text-sm py-2 hover:text-rouille">Accueil</a>
+        <a href="/menus.html"   class="block text-sm py-2 hover:text-rouille">Nos menus</a>
+        <a href="/contact.html" class="block text-sm py-2 hover:text-rouille">Contact</a>
+        <template x-if="utilisateur">
+          <a href="/mon-espace.html" class="block text-sm py-2 hover:text-rouille">Mon espace</a>
+        </template>
+        <template x-if="!utilisateur">
+          <a href="/connexion.html" class="block text-sm py-2 hover:text-rouille">Connexion</a>
+        </template>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       HERO SOMBRE
+  ═══════════════════════════════════════ -->
+  <header class="bg-nuit text-white py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <p class="text-rouille text-sm uppercase tracking-wide font-semibold mb-2">Informations légales</p>
+      <h1 class="font-display text-4xl md:text-5xl font-bold">Conditions générales de vente</h1>
+      <p class="text-white/70 mt-3">
+        Dernière mise à jour : <span class="font-semibold">21 juillet 2026</span>
+      </p>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════
+       CONTENU PRINCIPAL (avec table des matières)
+  ═══════════════════════════════════════ -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+      <!-- ─────── Table des matières (sticky à gauche) ─────── -->
+      <aside class="lg:col-span-1">
+        <div class="sticky top-24 bg-white rounded shadow-sm border border-nuit/8 p-4">
+          <h2 class="font-display text-lg text-nuit mb-3 pb-2 border-b border-nuit/10">Sommaire</h2>
+          <nav class="toc space-y-0.5">
+            <a href="#article-1">1. Préambule</a>
+            <a href="#article-2">2. Objet</a>
+            <a href="#article-3">3. Vendeur</a>
+            <a href="#article-4">4. Prestations</a>
+            <a href="#article-5">5. Commande</a>
+            <a href="#article-6">6. Prix et paiement</a>
+            <a href="#article-7">7. Livraison</a>
+            <a href="#article-8">8. Prêt de matériel</a>
+            <a href="#article-9">9. Rétractation</a>
+            <a href="#article-10">10. Annulation</a>
+            <a href="#article-11">11. Responsabilité</a>
+            <a href="#article-12">12. Force majeure</a>
+            <a href="#article-13">13. Données personnelles</a>
+            <a href="#article-14">14. Réclamations et médiation</a>
+            <a href="#article-15">15. Droit applicable</a>
+          </nav>
+        </div>
+      </aside>
+
+      <!-- ─────── Contenu principal ─────── -->
+      <div class="lg:col-span-3 bg-white rounded shadow-sm border border-nuit/8 p-6 md:p-10 legal-content">
+
+        <!-- Encart introductif -->
+        <div class="info-box">
+          <p class="text-sm text-nuit/80">
+            Les présentes conditions générales de vente (ci-après les <strong>« CGV »</strong>) régissent
+            l'ensemble des relations contractuelles entre la société <strong>Vite & Gourmand SAS</strong>
+            et ses clients dans le cadre des prestations de traiteur proposées sur le site
+            <a href="/index.html">vitegourmand.fr</a>. Elles complètent nos
+            <a href="/mentions-legales">mentions légales</a>.
+          </p>
+        </div>
+
+        <!-- ARTICLE 1 -->
+        <h2 id="article-1">Article 1 · Préambule et acceptation</h2>
+        <p>
+          Toute commande passée sur le site Vite & Gourmand implique l'acceptation pleine et
+          entière des présentes CGV par le client, sans réserve. Le client déclare avoir pris
+          connaissance des CGV avant validation de sa commande et en accepter les termes.
+        </p>
+        <p>
+          Vite & Gourmand se réserve le droit de modifier à tout moment les présentes CGV. Les
+          CGV applicables sont celles en vigueur à la date de validation de la commande. Toute
+          modification est publiée sur le site avec sa date d'entrée en vigueur.
+        </p>
+
+        <!-- ARTICLE 2 -->
+        <h2 id="article-2">Article 2 · Objet</h2>
+        <p>
+          Les présentes CGV ont pour objet de définir les droits et obligations des parties dans
+          le cadre de la vente en ligne, par Vite & Gourmand, de prestations de traiteur à des
+          clients particuliers ou professionnels, comprenant :
+        </p>
+        <ul>
+          <li>La fourniture de menus, plats et compositions culinaires</li>
+          <li>La livraison des prestations à l'adresse indiquée par le client</li>
+          <li>Le prêt éventuel de matériel de service (plats, couverts, verres)</li>
+        </ul>
+
+        <!-- ARTICLE 3 -->
+        <h2 id="article-3">Article 3 · Identification du vendeur</h2>
+        <p>Les prestations sont vendues par :</p>
+        <ul>
+          <li><strong>Raison sociale :</strong> Vite & Gourmand SAS</li>
+          <li><strong>Siège social :</strong> 12 rue Sainte-Catherine, 33000 Bordeaux, France</li>
+          <li><strong>SIRET :</strong> 123 456 789 00012 <em class="text-nuit/50">(fictif)</em></li>
+          <li><strong>E-mail :</strong> <a href="mailto:contact@vitegourmand.fr">contact@vitegourmand.fr</a></li>
+        </ul>
+        <p>
+          Les informations complètes concernant l'éditeur figurent dans les
+          <a href="/mentions-legales">mentions légales</a>.
+        </p>
+
+        <!-- ARTICLE 4 -->
+        <h2 id="article-4">Article 4 · Description des prestations</h2>
+
+        <h3>4.1 Menus proposés</h3>
+        <p>
+          Vite & Gourmand propose une gamme de menus organisés par thèmes (classique, évènement,
+          Noël, Pâques…) et adaptés à différents régimes (classique, végétarien, vegan, sans
+          gluten, halal, casher). Chaque menu comprend une entrée, un plat principal et un
+          dessert, ainsi que la liste détaillée des plats et allergènes qui les composent.
+        </p>
+
+        <h3>4.2 Informations affichées</h3>
+        <p>Pour chaque menu, sont indiqués sur le site :</p>
+        <ul>
+          <li>La composition complète (entrées, plats, desserts)</li>
+          <li>Le prix par personne TTC</li>
+          <li>Le nombre minimum de personnes requis</li>
+          <li>Les thèmes et régimes compatibles</li>
+          <li>La liste consolidée des allergènes présents</li>
+          <li>Les conditions particulières éventuelles (délai de précommande, disponibilité)</li>
+        </ul>
+
+        <h3>4.3 Photographies</h3>
+        <p>
+          Les photographies illustrant les menus sur le site sont fournies à titre indicatif et
+          n'ont pas de valeur contractuelle. La présentation finale des plats peut varier
+          légèrement en fonction des produits frais disponibles.
+        </p>
+
+        <h3>4.4 Disponibilité</h3>
+        <p>
+          Les menus sont proposés dans la limite des stocks disponibles. En cas d'indisponibilité
+          d'un menu après validation de la commande, le client sera informé dans les meilleurs
+          délais et pourra opter pour un menu de substitution ou obtenir le remboursement
+          intégral de sa commande.
+        </p>
+
+        <!-- ARTICLE 5 -->
+        <h2 id="article-5">Article 5 · Processus de commande</h2>
+
+        <h3>5.1 Création de compte</h3>
+        <p>
+          Toute commande nécessite la création préalable d'un compte client sur le site. Le
+          client s'engage à fournir des informations exactes et à jour, et à protéger la
+          confidentialité de ses identifiants.
+        </p>
+
+        <h3>5.2 Étapes de commande</h3>
+        <p>Le processus de commande se déroule comme suit :</p>
+        <ul>
+          <li>Choix d'un menu et du nombre de personnes</li>
+          <li>Renseignement de l'adresse de livraison et de la date/heure souhaitée</li>
+          <li>Sélection éventuelle du prêt de matériel</li>
+          <li>Validation du récapitulatif de commande</li>
+          <li>Confirmation de la commande</li>
+        </ul>
+
+        <h3>5.3 Délai de précommande</h3>
+        <div class="warning-box">
+          <p class="text-sm text-nuit/80">
+            <strong>Précommande obligatoire :</strong> toutes les commandes doivent être passées
+            au minimum <strong>15 jours avant la date de prestation</strong>. Certains menus
+            peuvent nécessiter un délai supérieur, précisé dans leurs conditions particulières
+            (jusqu'à 45 jours pour les prestations complexes).
+          </p>
+        </div>
+
+        <h3>5.4 Confirmation de commande</h3>
+        <p>
+          Après validation, le client reçoit un e-mail de confirmation contenant le numéro
+          unique de la commande au format <code class="text-rouille">VG-AAAA-NNNN</code> ainsi
+          que le récapitulatif détaillé. La commande est alors enregistrée au statut
+          « <em>En attente</em> » et fait l'objet d'un traitement par nos équipes.
+        </p>
+
+        <h3>5.5 Statuts de commande</h3>
+        <p>Le client peut suivre l'évolution de sa commande depuis son espace personnel :</p>
+        <ul>
+          <li><strong>En attente</strong> — commande enregistrée, en cours de validation</li>
+          <li><strong>Acceptée</strong> — commande validée par Vite & Gourmand</li>
+          <li><strong>En préparation</strong> — la cuisine prépare la prestation</li>
+          <li><strong>En cours de livraison</strong> — commande en route vers le client</li>
+          <li><strong>Livrée</strong> — commande livrée au client</li>
+          <li><strong>Attente retour matériel</strong> — dans le cas d'un prêt de matériel</li>
+          <li><strong>Terminée</strong> — prestation clôturée</li>
+          <li><strong>Annulée</strong> — commande annulée (voir article 10)</li>
+        </ul>
+
+        <!-- ARTICLE 6 -->
+        <h2 id="article-6">Article 6 · Prix et modalités de paiement</h2>
+
+        <h3>6.1 Prix</h3>
+        <p>
+          Les prix affichés sur le site sont en euros toutes taxes comprises (TTC), TVA
+          française en vigueur applicable. Ils s'entendent par personne et sont multipliés par
+          le nombre de convives indiqué lors de la commande.
+        </p>
+
+        <h3>6.2 Frais de livraison</h3>
+        <p>
+          Les frais de livraison sont calculés en fonction de la distance entre le siège de
+          Vite & Gourmand et l'adresse de livraison. Un forfait de base de 5 € est appliqué,
+          auquel s'ajoutent 0,59 €/km au-delà de la zone Bordeaux Métropole. Le montant final
+          est confirmé au client après validation de son adresse.
+        </p>
+
+        <h3>6.3 Réduction commande importante</h3>
+        <div class="success-box">
+          <p class="text-sm text-nuit/80">
+            <strong>Remise fidélité :</strong> une remise commerciale de <strong>10 %</strong>
+            est automatiquement appliquée sur le montant total du menu (hors frais de livraison)
+            lorsque celui-ci excède <strong>500 € TTC</strong>. Cette remise apparaît clairement
+            sur le récapitulatif de commande.
+          </p>
+        </div>
+
+        <h3>6.4 Modalités de paiement</h3>
+        <p>
+          Le paiement s'effectue lors de la validation de la commande via les moyens de paiement
+          sécurisés proposés sur le site. La commande n'est définitivement enregistrée qu'après
+          confirmation du paiement.
+        </p>
+        <p>
+          <em class="text-nuit/60">Note : dans la version actuelle du site (version pédagogique),
+          l'intégration d'un système de paiement en ligne (Stripe ou équivalent) fait partie
+          des développements futurs planifiés. Les commandes de démonstration sont enregistrées
+          sans transaction financière effective.</em>
+        </p>
+
+        <h3>6.5 Facturation</h3>
+        <p>
+          Une facture est établie pour toute commande et adressée au client par voie
+          électronique à l'e-mail renseigné dans son compte.
+        </p>
+
+        <!-- ARTICLE 7 -->
+        <h2 id="article-7">Article 7 · Livraison</h2>
+
+        <h3>7.1 Zone de livraison</h3>
+        <p>
+          Vite & Gourmand livre à Bordeaux et sa métropole ainsi que dans un périmètre de
+          <strong>30 kilomètres</strong> autour de son siège. Les livraisons au-delà de cette
+          zone font l'objet d'une étude au cas par cas et d'un devis personnalisé.
+        </p>
+
+        <h3>7.2 Date et heure de livraison</h3>
+        <p>
+          La date et l'heure de livraison sont choisies par le client lors de la commande. Ces
+          horaires sont fermes et confirmés par Vite & Gourmand après acceptation de la
+          commande. Toute modification doit être demandée au minimum 72 heures avant la
+          prestation.
+        </p>
+
+        <h3>7.3 Retard de livraison</h3>
+        <p>
+          En cas de retard supérieur à 30 minutes non justifié par un cas de force majeure
+          (voir article 12), le client peut :
+        </p>
+        <ul>
+          <li>Demander une réduction commerciale</li>
+          <li>Annuler la commande avec remboursement intégral si la prestation ne peut plus être assurée</li>
+        </ul>
+
+        <h3>7.4 Réception</h3>
+        <p>
+          À la livraison, le client (ou son représentant présent à l'adresse indiquée) doit
+          vérifier la conformité de la prestation (nombre de convives, complétude, état des
+          plats). Toute réserve doit être formulée immédiatement au livreur.
+        </p>
+
+        <!-- ARTICLE 8 -->
+        <h2 id="article-8">Article 8 · Prêt de matériel</h2>
+        <p>
+          Sur demande lors de la commande, Vite & Gourmand peut prêter au client le matériel
+          de service nécessaire à la prestation : plats, plats de service, couverts, verres,
+          nappes.
+        </p>
+
+        <h3>8.1 Conditions du prêt</h3>
+        <ul>
+          <li>Le prêt est <strong>gratuit</strong> pour toute commande incluant cette option</li>
+          <li>Le matériel doit être <strong>rendu propre</strong> et en bon état</li>
+          <li>Le retour doit intervenir <strong>dans les 72 heures</strong> suivant la fin de la prestation</li>
+        </ul>
+
+        <h3>8.2 Casse et perte</h3>
+        <p>
+          En cas de casse, de perte ou de détérioration du matériel prêté, le client s'engage
+          à indemniser Vite & Gourmand à hauteur de la valeur de remplacement du matériel, sur
+          présentation d'un devis ou d'une facture. Un état des lieux contradictoire est établi
+          lors du retour.
+        </p>
+
+        <!-- ARTICLE 9 -->
+        <h2 id="article-9">Article 9 · Droit de rétractation</h2>
+        <div class="warning-box">
+          <p class="text-sm text-nuit/80">
+            <strong>Attention — Exclusion du droit de rétractation :</strong> conformément à
+            l'article <strong>L.221-28 3° du Code de la consommation</strong>, les prestations
+            de restauration livrées à une date ou une période déterminée ne bénéficient pas
+            du droit de rétractation de 14 jours applicable aux ventes à distance.
+          </p>
+        </div>
+        <p>
+          Cette exclusion se justifie par la nature périssable des denrées commandées et par
+          la préparation à une date précise convenue avec le client. Les modalités d'annulation
+          spécifiques sont détaillées à l'article 10.
+        </p>
+
+        <!-- ARTICLE 10 -->
+        <h2 id="article-10">Article 10 · Annulation et remboursement</h2>
+
+        <h3>10.1 Annulation à l'initiative du client</h3>
+        <p>Le client peut annuler sa commande selon les conditions suivantes :</p>
+        <ul>
+          <li>
+            <strong>Plus de 30 jours avant la prestation :</strong> remboursement intégral de
+            la commande, hors frais de dossier éventuels (10 €)
+          </li>
+          <li>
+            <strong>Entre 15 et 30 jours avant la prestation :</strong> remboursement de 50 %
+            du montant total
+          </li>
+          <li>
+            <strong>Moins de 15 jours avant la prestation :</strong> aucun remboursement, sauf
+            cas de force majeure justifié
+          </li>
+        </ul>
+        <p>
+          L'annulation doit être formulée par e-mail à
+          <a href="mailto:contact@vitegourmand.fr">contact@vitegourmand.fr</a> ou depuis
+          l'espace client. Le motif de l'annulation doit être précisé.
+        </p>
+
+        <h3>10.2 Annulation à l'initiative de Vite & Gourmand</h3>
+        <p>
+          Vite & Gourmand se réserve le droit d'annuler une commande dans les cas suivants :
+        </p>
+        <ul>
+          <li>Impossibilité technique d'assurer la prestation (indisponibilité de matières premières, cas de force majeure)</li>
+          <li>Comportement inapproprié ou manquement grave du client</li>
+          <li>Détection d'une fraude ou d'un impayé</li>
+        </ul>
+        <p>
+          En cas d'annulation par Vite & Gourmand, le remboursement intégral de la commande
+          est effectué dans un délai maximal de 14 jours.
+        </p>
+
+        <!-- ARTICLE 11 -->
+        <h2 id="article-11">Article 11 · Responsabilité et garanties</h2>
+
+        <h3>11.1 Obligations de Vite & Gourmand</h3>
+        <p>
+          Vite & Gourmand s'engage à respecter la législation et la réglementation en vigueur,
+          notamment en matière d'hygiène alimentaire (règlement CE n° 852/2004), d'étiquetage
+          des allergènes (règlement INCO n° 1169/2011) et de sécurité des denrées alimentaires.
+        </p>
+
+        <h3>11.2 Allergènes et régimes alimentaires</h3>
+        <div class="warning-box">
+          <p class="text-sm text-nuit/80">
+            La liste des <strong>14 allergènes majeurs</strong> présents dans chaque plat est
+            affichée sur le site et sur les documents de livraison. Il appartient au client
+            de vérifier ces informations avant commande et de nous signaler toute allergie ou
+            intolérance particulière lors de la validation. Vite & Gourmand décline toute
+            responsabilité en cas de non-communication d'une allergie ou intolérance connue.
+          </p>
+        </div>
+
+        <h3>11.3 Garantie légale de conformité</h3>
+        <p>
+          Vite & Gourmand garantit la conformité des prestations livrées à la description
+          affichée sur le site. Toute non-conformité doit être signalée dans les 24 heures
+          suivant la livraison, accompagnée de photographies et d'une description précise.
+        </p>
+
+        <h3>11.4 Limitation de responsabilité</h3>
+        <p>
+          Vite & Gourmand ne saurait être tenue responsable des dommages indirects résultant
+          d'une utilisation inadaptée des prestations livrées, ni des conséquences d'un mauvais
+          renseignement des informations de commande par le client (adresse erronée, allergies
+          non signalées, nombre de convives sous-estimé).
+        </p>
+
+        <!-- ARTICLE 12 -->
+        <h2 id="article-12">Article 12 · Force majeure</h2>
+        <p>
+          Aucune des parties ne pourra être tenue responsable de l'inexécution ou de l'exécution
+          tardive de ses obligations si celle-ci résulte d'un cas de force majeure au sens de
+          l'article <strong>1218 du Code civil</strong>.
+        </p>
+        <p>
+          Sont notamment considérés comme cas de force majeure : catastrophes naturelles,
+          incendies, inondations, épidémies, décisions administratives contraignantes, grèves
+          générales, ruptures d'approvisionnement indépendantes de la volonté du fournisseur.
+        </p>
+        <p>
+          La partie invoquant la force majeure doit en informer l'autre partie dans les
+          meilleurs délais et fournir tout justificatif utile. Si la situation persiste plus
+          de 30 jours, chaque partie peut résilier le contrat par notification écrite, avec
+          remboursement au prorata des prestations non exécutées.
+        </p>
+
+        <!-- ARTICLE 13 -->
+        <h2 id="article-13">Article 13 · Protection des données personnelles</h2>
+        <p>
+          Le traitement des données personnelles du client dans le cadre de sa commande est
+          détaillé dans les <a href="/mentions-legales">mentions légales</a>, section 5. Le
+          client dispose d'un droit d'accès, de rectification, d'effacement, de portabilité
+          et d'opposition sur ses données, conformément au RGPD.
+        </p>
+        <p>
+          Les données de commande sont conservées <strong>10 ans</strong> conformément aux
+          obligations comptables et fiscales françaises (article L.123-22 du Code de commerce).
+        </p>
+
+        <!-- ARTICLE 14 -->
+        <h2 id="article-14">Article 14 · Réclamations et médiation de la consommation</h2>
+
+        <h3>14.1 Service client</h3>
+        <p>
+          Toute réclamation doit être adressée en priorité au service client de Vite & Gourmand :
+        </p>
+        <ul>
+          <li><strong>E-mail :</strong> <a href="mailto:contact@vitegourmand.fr">contact@vitegourmand.fr</a></li>
+          <li><strong>Formulaire de contact :</strong> <a href="/contact.html">page contact</a></li>
+          <li><strong>Courrier :</strong> Vite & Gourmand SAS, Service Client, 12 rue Sainte-Catherine, 33000 Bordeaux</li>
+        </ul>
+        <p>
+          Nous nous engageons à traiter toute réclamation dans un délai maximal de
+          <strong>14 jours ouvrés</strong>.
+        </p>
+
+        <h3>14.2 Médiation de la consommation</h3>
+        <p>
+          Conformément aux articles <strong>L.616-1 et R.616-1 du Code de la consommation</strong>,
+          Vite & Gourmand propose à ses clients particuliers, en cas de litige non résolu avec
+          notre service client, le recours à un médiateur de la consommation :
+        </p>
+        <ul>
+          <li><strong>Médiateur :</strong> Médiation de la consommation – secteur alimentation <em class="text-nuit/50">(à préciser)</em></li>
+          <li><strong>Site :</strong> plateforme européenne de règlement en ligne des litiges <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer">ec.europa.eu/consumers/odr</a></li>
+        </ul>
+        <p>
+          Le recours à ce médiateur est <strong>gratuit</strong> pour le consommateur. Il doit
+          être saisi dans un délai maximal d'un an à compter de la réclamation écrite adressée
+          au professionnel.
+        </p>
+
+        <!-- ARTICLE 15 -->
+        <h2 id="article-15">Article 15 · Droit applicable et juridiction compétente</h2>
+        <p>
+          Les présentes CGV sont régies par le droit français. La langue du contrat est le
+          français.
+        </p>
+        <p>
+          En cas de litige, et à défaut de résolution amiable ou par médiation (voir article 14),
+          les tribunaux français seront seuls compétents. Le client consommateur pourra saisir,
+          à son choix, le tribunal du lieu de son domicile ou celui du siège social de
+          Vite & Gourmand (Bordeaux).
+        </p>
+        <p>
+          En cas de contradiction entre les CGV et une commande particulière, les stipulations
+          particulières convenues avec le client prévalent sur les CGV.
+        </p>
+
+        <!-- Note de fin (projet pédagogique) -->
+        <div class="mt-12 pt-6 border-t border-nuit/10">
+          <p class="text-xs text-nuit/50 italic">
+            <strong>Note :</strong> ces CGV sont rédigées dans le cadre d'un projet pédagogique
+            réalisé pour le titre professionnel Développeur Web et Web Mobile (DWWM) — Studi.
+            Les mentions concernant l'entreprise Vite & Gourmand (SIRET, RCS, adresse, TVA)
+            sont fictives et ne correspondent à aucune entité réelle. Toute ressemblance avec
+            une entreprise existante serait purement fortuite. Pour une exploitation
+            commerciale réelle, il conviendrait de faire valider ces CGV par un juriste
+            professionnel et de compléter les mentions manquantes (médiateur de la consommation
+            désigné, mentions bancaires).
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Retour à l'accueil -->
+    <div class="text-center mt-8">
+      <a href="/index.html" class="inline-flex items-center gap-2 text-rouille hover:text-rouille/80 font-semibold">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Retour à l'accueil
+      </a>
+    </div>
+
+  </main>
+
+  <!-- ══════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════ -->
+  <footer class="bg-nuit text-white/70 py-8 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
+      <p>
+        © 2026 Vite & Gourmand SAS — Traiteur artisanal bordelais
+      </p>
+      <p class="mt-2 text-xs">
+        <a href="/mentions-legales" class="hover:text-rouille">Mentions légales</a>
+        · <a href="/cgv" class="hover:text-rouille">Conditions générales de vente</a>
+        · <a href="/contact.html" class="hover:text-rouille">Contact</a>
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>
