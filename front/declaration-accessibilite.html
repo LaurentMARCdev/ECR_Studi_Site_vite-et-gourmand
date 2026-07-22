@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Déclaration d'accessibilité – Vite & Gourmand</title>
+  <meta name="description" content="Déclaration d'accessibilité RGAA du site Vite & Gourmand.">
+
+  <!-- Tailwind CSS via CDN (cohérent avec les autres pages) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Alpine.js (pour la nav réactive) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Polices Google : Playfair Display (titres) + Inter (corps) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Configuration Tailwind avec palette Vite & Gourmand -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nuit:    '#1A1208',
+            creme:   '#F5F0E8',
+            rouille: '#D4521A',
+            herbe:   '#4A7C59',
+            safran:  '#F0C060',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            sans:    ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Application des polices sur la page */
+    body { font-family: 'Inter', sans-serif; background-color: #F5F0E8; color: #1A1208; }
+
+    /* Cache les éléments Alpine avant leur initialisation */
+    [x-cloak] { display: none !important; }
+
+    /* Style spécifique pour la mise en forme du texte légal */
+    .legal-content h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1A1208;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid rgba(212, 82, 26, 0.2);
+    }
+
+    .legal-content h3 {
+      font-weight: 600;
+      color: #1A1208;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .legal-content p {
+      margin-bottom: 1rem;
+      line-height: 1.7;
+      color: rgba(26, 18, 8, 0.8);
+    }
+
+    .legal-content ul {
+      list-style: disc;
+      margin-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .legal-content ul li {
+      margin-bottom: 0.5rem;
+      line-height: 1.6;
+      color: rgba(26, 18, 8, 0.8);
+    }
+
+    .legal-content a {
+      color: #D4521A;
+      text-decoration: underline;
+    }
+
+    .legal-content a:hover {
+      color: rgba(212, 82, 26, 0.7);
+    }
+
+    /* Encarts d'information visuels */
+    .info-box {
+      background-color: rgba(240, 192, 96, 0.15);
+      border-left: 4px solid #F0C060;
+      padding: 1rem 1.25rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+    }
+
+    .warning-box {
+      background-color: rgba(212, 82, 26, 0.1);
+      border-left: 4px solid #D4521A;
+      padding: 1rem 1.25rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+    }
+
+    .success-box {
+      background-color: rgba(74, 124, 89, 0.1);
+      border-left: 4px solid #4A7C59;
+      padding: 1rem 1.25rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+    }
+
+    /* Badge de conformité */
+    .badge-conformite {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    .badge-non-conforme {
+      background-color: rgba(212, 82, 26, 0.15);
+      color: #D4521A;
+    }
+  </style>
+</head>
+
+<body x-data="{ menuOpen: false, utilisateur: null }" x-cloak
+      x-init="fetch('/api/auth/me', { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(u => utilisateur = u)">
+
+  <!-- ══════════════════════════════════════
+       NAV STICKY (cohérente avec le reste du site)
+  ═══════════════════════════════════════ -->
+  <nav class="bg-nuit text-white sticky top-0 z-50 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <a href="/index.html" class="font-display text-2xl font-bold">
+          Vite <span class="text-rouille">&</span> Gourmand
+        </a>
+
+        <div class="hidden md:flex items-center gap-6 text-sm">
+          <a href="/index.html"   class="hover:text-rouille transition">Accueil</a>
+          <a href="/menus.html"   class="hover:text-rouille transition">Nos menus</a>
+          <a href="/contact.html" class="hover:text-rouille transition">Contact</a>
+          <template x-if="utilisateur">
+            <a href="/mon-espace.html" class="hover:text-rouille transition">Mon espace</a>
+          </template>
+          <template x-if="!utilisateur">
+            <a href="/connexion.html" class="bg-rouille text-white px-4 py-2 rounded font-semibold hover:bg-rouille/80 transition">
+              Connexion
+            </a>
+          </template>
+        </div>
+
+        <button @click="menuOpen = !menuOpen" class="md:hidden text-white" aria-label="Menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+
+      <div x-show="menuOpen" x-transition class="md:hidden pb-4 space-y-2">
+        <a href="/index.html"   class="block text-sm py-2 hover:text-rouille">Accueil</a>
+        <a href="/menus.html"   class="block text-sm py-2 hover:text-rouille">Nos menus</a>
+        <a href="/contact.html" class="block text-sm py-2 hover:text-rouille">Contact</a>
+        <template x-if="utilisateur">
+          <a href="/mon-espace.html" class="block text-sm py-2 hover:text-rouille">Mon espace</a>
+        </template>
+        <template x-if="!utilisateur">
+          <a href="/connexion.html" class="block text-sm py-2 hover:text-rouille">Connexion</a>
+        </template>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       HERO SOMBRE
+  ═══════════════════════════════════════ -->
+  <header class="bg-nuit text-white py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <p class="text-rouille text-sm uppercase tracking-wide font-semibold mb-2">Informations légales</p>
+      <h1 class="font-display text-4xl md:text-5xl font-bold">Déclaration d'accessibilité</h1>
+      <div class="mt-4 flex items-center gap-3 flex-wrap">
+        <span class="badge-conformite badge-non-conforme">Accessibilité : non conforme</span>
+        <span class="text-white/50 text-sm">·</span>
+        <span class="text-white/70 text-sm">Établie le <strong>21 juillet 2026</strong></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════
+       CONTENU PRINCIPAL
+  ═══════════════════════════════════════ -->
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <div class="bg-white rounded shadow-sm border border-nuit/8 p-6 md:p-10 legal-content">
+
+      <!-- Encart introductif -->
+      <div class="info-box">
+        <p class="text-sm text-nuit/80">
+          <strong>Vite & Gourmand SAS</strong> s'engage à rendre son site internet accessible
+          conformément à l'<strong>article 47 de la loi n° 2005-102 du 11 février 2005</strong> pour
+          l'égalité des droits et des chances, la participation et la citoyenneté des personnes
+          handicapées, et à la <strong>directive européenne 2019/882</strong> (European Accessibility
+          Act) transposée en droit français.
+        </p>
+        <p class="text-sm text-nuit/80 mt-3">
+          À cette fin, la présente déclaration d'accessibilité s'applique au site
+          <a href="https://vitegourmandlm.alwaysdata.net">vitegourmandlm.alwaysdata.net</a>.
+        </p>
+      </div>
+
+      <!-- 1. État de conformité -->
+      <h2>1. État de conformité</h2>
+      <p>
+        Le site <strong>Vite & Gourmand</strong> est <strong>non conforme</strong> avec le
+        <strong>Référentiel Général d'Amélioration de l'Accessibilité (RGAA) version 4.1.2</strong>
+        en vigueur.
+      </p>
+      <div class="warning-box">
+        <p class="text-sm text-nuit/80">
+          <strong>Statut :</strong> Non conforme — Aucun audit formel de conformité n'a été
+          réalisé à ce jour. L'application respecte cependant plusieurs bonnes pratiques
+          d'accessibilité intégrées dès la conception, listées en section 3.
+        </p>
+      </div>
+
+      <!-- 2. Contexte -->
+      <h2>2. Contexte de la déclaration</h2>
+      <p>
+        Le site Vite & Gourmand a été développé dans le cadre d'un <strong>projet pédagogique</strong>
+        pour l'obtention du titre professionnel <em>Développeur Web et Web Mobile (DWWM)</em>
+        auprès de l'organisme de formation Studi.
+      </p>
+      <p>
+        Les priorités du cahier des charges portaient sur la mise en place d'une architecture
+        applicative complète (back-end Symfony, base relationnelle PostgreSQL, base NoSQL MongoDB,
+        API REST, front-end statique), sur la sécurité conforme aux recommandations de l'ANSSI,
+        et sur la conformité RGPD. La mise en conformité RGAA constitue un axe d'amélioration
+        prioritaire post-projet, documenté dans le plan d'évolution ci-après.
+      </p>
+
+      <!-- 3. Bonnes pratiques déjà appliquées -->
+      <h2>3. Bonnes pratiques d'accessibilité déjà appliquées</h2>
+      <p>Malgré l'absence d'audit formel, plusieurs critères RGAA sont respectés par conception :</p>
+
+      <h3>Éléments obligatoires (thématique 8)</h3>
+      <ul>
+        <li>Déclaration de type de document (<code>&lt;!DOCTYPE html&gt;</code>) sur toutes les pages</li>
+        <li>Attribut de langue (<code>lang="fr"</code>) présent sur la balise racine</li>
+        <li>Encodage UTF-8 explicitement déclaré</li>
+        <li>Titre de page (<code>&lt;title&gt;</code>) unique et descriptif sur chaque écran</li>
+        <li>Métadonnée <code>viewport</code> configurée pour le responsive</li>
+      </ul>
+
+      <h3>Structuration de l'information (thématique 9)</h3>
+      <ul>
+        <li>Hiérarchie des titres respectée : un <code>&lt;h1&gt;</code> unique par page, suivi de <code>&lt;h2&gt;</code>, <code>&lt;h3&gt;</code> dans l'ordre</li>
+        <li>Balises HTML5 sémantiques : <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;header&gt;</code>, <code>&lt;footer&gt;</code>, <code>&lt;aside&gt;</code>, <code>&lt;section&gt;</code></li>
+        <li>Utilisation d'attributs <code>role</code> et <code>aria-label</code> sur les zones structurantes</li>
+      </ul>
+
+      <h3>Formulaires (thématique 11)</h3>
+      <ul>
+        <li>Étiquettes explicites (<code>&lt;label for="..."&gt;</code>) associées à tous les champs</li>
+        <li>Champs obligatoires signalés par l'attribut <code>required</code> et par un astérisque visuel</li>
+        <li>Utilisation des types HTML5 sémantiques : <code>email</code>, <code>date</code>, <code>time</code>, <code>number</code>, <code>tel</code></li>
+        <li>Messages d'erreur associés aux champs concernés et affichés dynamiquement</li>
+        <li>Boutons désactivés visuellement distincts pendant les traitements asynchrones</li>
+      </ul>
+
+      <h3>Navigation (thématique 12)</h3>
+      <ul>
+        <li>Navigation principale identique et cohérente sur toutes les pages</li>
+        <li>Libellés de liens explicites (« Voir le menu », « Commander ce menu », « Retour à l'accueil »)</li>
+        <li>Menu de navigation adaptable au format mobile</li>
+      </ul>
+
+      <h3>Présentation (thématique 10)</h3>
+      <ul>
+        <li>Design responsive fonctionnel du mobile au bureau (breakpoints Tailwind CSS)</li>
+        <li>Focus visible sur les champs interactifs (bordure colorée à la mise au point)</li>
+        <li>Palette de couleurs pensée pour offrir des contrastes lisibles sur les éléments principaux</li>
+        <li>Utilisation de polices web lisibles (Playfair Display pour les titres, Inter pour le corps)</li>
+      </ul>
+
+      <!-- 4. Non-conformités identifiées -->
+      <h2>4. Non-conformités identifiées</h2>
+      <p>
+        Un examen des points d'amélioration a permis d'identifier les non-conformités suivantes,
+        classées par priorité :
+      </p>
+
+      <h3>Priorité haute</h3>
+      <ul>
+        <li>Absence de <strong>lien d'évitement</strong> (« Aller au contenu principal ») en début de page</li>
+        <li>Certains <strong>contrastes de textes secondaires</strong> (informations en gris clair) ne respectent pas le ratio 4,5:1 exigé par le niveau AA</li>
+        <li>Absence d'attributs <code>alt</code> descriptifs sur certaines images de contenu</li>
+        <li>Les <strong>notifications dynamiques</strong> (toasts de succès et d'erreur) ne sont pas annoncées aux technologies d'assistance (attribut <code>aria-live</code> manquant)</li>
+      </ul>
+
+      <h3>Priorité moyenne</h3>
+      <ul>
+        <li>Regroupement des champs de formulaire par <code>&lt;fieldset&gt;</code> et <code>&lt;legend&gt;</code> peu utilisé</li>
+        <li>Attributs d'autocomplétion HTML5 (<code>autocomplete</code>) non systématisés</li>
+        <li>Ordre de tabulation clavier non explicitement testé sur les formulaires complexes</li>
+        <li>Piège de focus dans les modales (formulaire admin, formulaire de commande) non garanti</li>
+      </ul>
+
+      <h3>Priorité basse</h3>
+      <ul>
+        <li>Absence de plan du site accessible</li>
+        <li>Absence de mode contrasté ou mode sombre proposé à l'utilisateur</li>
+        <li>Absence d'aide contextuelle sur certains formulaires longs</li>
+      </ul>
+
+      <!-- 5. Contenus non accessibles -->
+      <h2>5. Contenus non soumis à l'obligation d'accessibilité</h2>
+      <p>
+        Les contenus suivants ne relèvent pas du périmètre d'application du RGAA :
+      </p>
+      <ul>
+        <li>Les fichiers PDF de documentation technique interne (livrables de certification)</li>
+        <li>Les captures d'écran d'illustration incluses dans la documentation</li>
+      </ul>
+
+      <!-- 6. Plan d'action -->
+      <h2>6. Plan d'action de mise en conformité</h2>
+      <p>
+        Un plan d'amélioration progressive est envisagé, articulé en trois phases :
+      </p>
+
+      <div class="success-box">
+        <p class="text-sm text-nuit/80">
+          <strong>Phase 1 — Corrections rapides (court terme)</strong><br>
+          Ajout du lien d'évitement, correction des contrastes insuffisants, ajout des attributs
+          <code>alt</code> manquants, ajout des attributs <code>aria-live</code> sur les
+          notifications dynamiques.
+        </p>
+      </div>
+
+      <div class="success-box">
+        <p class="text-sm text-nuit/80">
+          <strong>Phase 2 — Audit formel (moyen terme)</strong><br>
+          Réalisation d'un audit RGAA 4.1 combinant outils automatiques (RGAAudit, WAVE, axe DevTools)
+          et vérification manuelle des 38 % de critères non couverts par l'automatisation. Publication
+          d'un rapport détaillé.
+        </p>
+      </div>
+
+      <div class="success-box">
+        <p class="text-sm text-nuit/80">
+          <strong>Phase 3 — Mise en conformité complète (long terme)</strong><br>
+          Correction systématique de l'ensemble des non-conformités identifiées lors de l'audit,
+          avec pour objectif un niveau de conformité minimum <strong>« partiellement conforme »</strong>,
+          puis <strong>« totalement conforme »</strong> au RGAA 4.1.
+        </p>
+      </div>
+
+      <!-- 7. Voies de recours -->
+      <h2>7. Voies de recours</h2>
+      <p>
+        Si vous constatez un défaut d'accessibilité vous empêchant d'accéder à un contenu ou une
+        fonctionnalité du site, et que vous n'obtenez pas de réponse rapide de notre part, vous
+        pouvez faire valoir votre droit à compensation en saisissant :
+      </p>
+      <ul>
+        <li>
+          <strong>Le Défenseur des droits</strong> —
+          <a href="https://www.defenseurdesdroits.fr" target="_blank" rel="noopener noreferrer">www.defenseurdesdroits.fr</a>
+        </li>
+        <li>
+          <strong>Un délégué du Défenseur des droits</strong> proche de chez vous —
+          <a href="https://www.defenseurdesdroits.fr/saisir/delegues" target="_blank" rel="noopener noreferrer">saisir un délégué</a>
+        </li>
+        <li>
+          <strong>Par courrier (gratuit, sans affranchissement)</strong> :<br>
+          Défenseur des droits<br>
+          Libre réponse 71120<br>
+          75342 Paris CEDEX 07
+        </li>
+      </ul>
+
+      <!-- 8. Contact -->
+      <h2>8. Contact</h2>
+      <p>
+        Pour toute question ou signalement concernant l'accessibilité de ce site, vous pouvez
+        nous contacter aux coordonnées suivantes :
+      </p>
+      <ul>
+        <li><strong>Par e-mail :</strong> <a href="mailto:accessibilite@vitegourmand.fr">accessibilite@vitegourmand.fr</a></li>
+        <li><strong>Via le formulaire :</strong> <a href="/contact.html">Page de contact</a></li>
+        <li><strong>Par courrier :</strong> Vite & Gourmand SAS, Service Accessibilité, 12 rue Sainte-Catherine, 33000 Bordeaux</li>
+      </ul>
+      <p>
+        Nous nous engageons à traiter tout signalement dans un délai maximal de
+        <strong>14 jours ouvrés</strong> et à vous proposer, le cas échéant, une alternative
+        pour accéder au contenu ou à la fonctionnalité concernée.
+      </p>
+
+      <!-- 9. Technologies utilisées -->
+      <h2>9. Technologies utilisées pour la réalisation du site</h2>
+      <p>L'accessibilité du site dépend en partie des technologies suivantes :</p>
+      <ul>
+        <li><strong>HTML5</strong> — structuration sémantique du contenu</li>
+        <li><strong>CSS3</strong> via Tailwind CSS — présentation et responsive design</li>
+        <li><strong>JavaScript ES6</strong> via Alpine.js — interactions et affichage dynamique</li>
+      </ul>
+      <p>
+        Le site est conçu pour être compatible avec les navigateurs modernes (Chrome, Firefox,
+        Safari, Edge — deux dernières versions stables) et les technologies d'assistance courantes.
+      </p>
+
+      <!-- Note de fin (projet pédagogique) -->
+      <div class="mt-12 pt-6 border-t border-nuit/10">
+        <p class="text-xs text-nuit/50 italic">
+          <strong>Note :</strong> cette déclaration d'accessibilité a été rédigée dans le cadre
+          d'un projet pédagogique réalisé pour le titre professionnel Développeur Web et Web
+          Mobile (DWWM) — Studi. Les mentions concernant l'entreprise Vite & Gourmand SAS sont
+          fictives. Cette déclaration illustre la démarche attendue pour une véritable mise en
+          conformité RGAA et sera à compléter par un audit formel lors d'une exploitation
+          commerciale réelle du site.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Retour à l'accueil -->
+    <div class="text-center mt-8">
+      <a href="/index.html" class="inline-flex items-center gap-2 text-rouille hover:text-rouille/80 font-semibold">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Retour à l'accueil
+      </a>
+    </div>
+
+  </main>
+
+  <!-- ══════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════ -->
+  <footer class="bg-nuit text-white/70 py-8 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
+      <p>
+        © 2026 Vite & Gourmand SAS — Traiteur artisanal bordelais
+      </p>
+      <p class="mt-2 text-xs">
+        <a href="/mentions-legales" class="hover:text-rouille">Mentions légales</a>
+        · <a href="/cgv" class="hover:text-rouille">Conditions générales de vente</a>
+        · <a href="/declaration-accessibilite" class="hover:text-rouille">Accessibilité : non conforme</a>
+        · <a href="/contact.html" class="hover:text-rouille">Contact</a>
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>

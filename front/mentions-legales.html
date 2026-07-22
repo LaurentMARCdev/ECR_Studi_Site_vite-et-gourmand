@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mentions légales – Vite & Gourmand</title>
+  <meta name="description" content="Mentions légales du site Vite & Gourmand, traiteur artisanal bordelais.">
+
+  <!-- Tailwind CSS via CDN (cohérent avec les autres pages) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Alpine.js (pour la nav réactive) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Polices Google : Playfair Display (titres) + Inter (corps) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Configuration Tailwind avec palette Vite & Gourmand -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nuit:    '#1A1208',   // Fond sombre, texte principal
+            creme:   '#F5F0E8',   // Fond clair
+            rouille: '#D4521A',   // Accents principaux (boutons, liens)
+            herbe:   '#4A7C59',   // Succès, validation
+            safran:  '#F0C060',   // Attention, notifications
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            sans:    ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Application des polices sur la page */
+    body { font-family: 'Inter', sans-serif; background-color: #F5F0E8; color: #1A1208; }
+
+    /* Cache les éléments Alpine avant leur initialisation */
+    [x-cloak] { display: none !important; }
+
+    /* Style spécifique pour la mise en forme du texte légal */
+    .legal-content h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1A1208;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid rgba(212, 82, 26, 0.2);
+    }
+
+    .legal-content h3 {
+      font-weight: 600;
+      color: #1A1208;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .legal-content p {
+      margin-bottom: 1rem;
+      line-height: 1.7;
+      color: rgba(26, 18, 8, 0.8);
+    }
+
+    .legal-content ul {
+      list-style: disc;
+      margin-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .legal-content ul li {
+      margin-bottom: 0.5rem;
+      line-height: 1.6;
+      color: rgba(26, 18, 8, 0.8);
+    }
+
+    .legal-content a {
+      color: #D4521A;
+      text-decoration: underline;
+    }
+
+    .legal-content a:hover {
+      color: rgba(212, 82, 26, 0.7);
+    }
+
+    /* Encart d'information visuel */
+    .info-box {
+      background-color: rgba(240, 192, 96, 0.15);
+      border-left: 4px solid #F0C060;
+      padding: 1rem 1.25rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+    }
+  </style>
+</head>
+
+<body x-data="{ menuOpen: false, utilisateur: null }" x-cloak
+      x-init="fetch('/api/auth/me', { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(u => utilisateur = u)">
+
+  <!-- ══════════════════════════════════════
+       NAV STICKY (cohérente avec le reste du site)
+  ═══════════════════════════════════════ -->
+  <nav class="bg-nuit text-white sticky top-0 z-50 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo / marque -->
+        <a href="/index.html" class="font-display text-2xl font-bold">
+          Vite <span class="text-rouille">&</span> Gourmand
+        </a>
+
+        <!-- Liens desktop -->
+        <div class="hidden md:flex items-center gap-6 text-sm">
+          <a href="/index.html"   class="hover:text-rouille transition">Accueil</a>
+          <a href="/menus.html"   class="hover:text-rouille transition">Nos menus</a>
+          <a href="/contact.html" class="hover:text-rouille transition">Contact</a>
+          <template x-if="utilisateur">
+            <a href="/mon-espace.html" class="hover:text-rouille transition">Mon espace</a>
+          </template>
+          <template x-if="!utilisateur">
+            <a href="/connexion.html" class="bg-rouille text-white px-4 py-2 rounded font-semibold hover:bg-rouille/80 transition">
+              Connexion
+            </a>
+          </template>
+        </div>
+
+        <!-- Bouton menu mobile -->
+        <button @click="menuOpen = !menuOpen" class="md:hidden text-white" aria-label="Menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Menu mobile déroulant -->
+      <div x-show="menuOpen" x-transition class="md:hidden pb-4 space-y-2">
+        <a href="/index.html"   class="block text-sm py-2 hover:text-rouille">Accueil</a>
+        <a href="/menus.html"   class="block text-sm py-2 hover:text-rouille">Nos menus</a>
+        <a href="/contact.html" class="block text-sm py-2 hover:text-rouille">Contact</a>
+        <template x-if="utilisateur">
+          <a href="/mon-espace.html" class="block text-sm py-2 hover:text-rouille">Mon espace</a>
+        </template>
+        <template x-if="!utilisateur">
+          <a href="/connexion.html" class="block text-sm py-2 hover:text-rouille">Connexion</a>
+        </template>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       HERO SOMBRE
+  ═══════════════════════════════════════ -->
+  <header class="bg-nuit text-white py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <p class="text-rouille text-sm uppercase tracking-wide font-semibold mb-2">Informations légales</p>
+      <h1 class="font-display text-4xl md:text-5xl font-bold">Mentions légales</h1>
+      <p class="text-white/70 mt-3">
+        Dernière mise à jour : <span class="font-semibold">21 juillet 2026</span>
+      </p>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════
+       CONTENU PRINCIPAL
+  ═══════════════════════════════════════ -->
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <div class="bg-white rounded shadow-sm border border-nuit/8 p-6 md:p-10 legal-content">
+
+      <!-- Encart introductif -->
+      <div class="info-box">
+        <p class="text-sm text-nuit/80">
+          <strong>Conformément aux dispositions</strong> des articles 6-III et 19 de la loi n° 2004-575 du
+          21 juin 2004 pour la Confiance dans l'économie numérique (LCEN), il est précisé aux
+          utilisateurs du site <a href="/index.html">Vite & Gourmand</a> l'identité des différents
+          intervenants dans le cadre de sa réalisation et de son suivi.
+        </p>
+      </div>
+
+      <!-- 1. Éditeur du site -->
+      <h2>1. Éditeur du site</h2>
+      <p>Le présent site est édité par :</p>
+      <ul>
+        <li><strong>Raison sociale :</strong> Vite & Gourmand SAS</li>
+        <li><strong>Forme juridique :</strong> Société par Actions Simplifiée</li>
+        <li><strong>Capital social :</strong> 10 000 €</li>
+        <li><strong>Siège social :</strong> 12 rue Sainte-Catherine, 33000 Bordeaux, France</li>
+        <li><strong>SIRET :</strong> 123 456 789 00012 <em class="text-nuit/50">(fictif)</em></li>
+        <li><strong>RCS :</strong> Bordeaux B 123 456 789 <em class="text-nuit/50">(fictif)</em></li>
+        <li><strong>Numéro de TVA intracommunautaire :</strong> FR 12 123456789 <em class="text-nuit/50">(fictif)</em></li>
+        <li><strong>Adresse e-mail :</strong> <a href="mailto:contact@vitegourmand.fr">contact@vitegourmand.fr</a></li>
+        <li><strong>Téléphone :</strong> 05 56 XX XX XX</li>
+      </ul>
+
+      <!-- 2. Directeur de la publication -->
+      <h2>2. Directeur de la publication</h2>
+      <p>Le directeur de la publication du site est :</p>
+      <ul>
+        <li><strong>Nom :</strong> Julie et José, cogérants de Vite & Gourmand SAS</li>
+        <li><strong>Contact :</strong> <a href="mailto:direction@vitegourmand.fr">direction@vitegourmand.fr</a></li>
+      </ul>
+
+      <!-- 3. Hébergeur -->
+      <h2>3. Hébergement du site</h2>
+      <p>Le site est hébergé par :</p>
+      <ul>
+        <li><strong>Raison sociale :</strong> Alwaysdata SARL</li>
+        <li><strong>Siège social :</strong> 91 rue du Faubourg Saint-Honoré, 75008 Paris, France</li>
+        <li><strong>Téléphone :</strong> +33 1 84 16 23 40</li>
+        <li><strong>Site web :</strong> <a href="https://www.alwaysdata.com" target="_blank" rel="noopener noreferrer">www.alwaysdata.com</a></li>
+      </ul>
+
+      <!-- 4. Propriété intellectuelle -->
+      <h2>4. Propriété intellectuelle</h2>
+      <p>
+        L'ensemble des éléments constituant le site (textes, graphismes, logos, icônes, images,
+        clips audio, téléchargements numériques, mises en page, code source) est la propriété
+        exclusive de Vite & Gourmand SAS ou de ses partenaires, et est protégé par les lois
+        françaises et internationales relatives à la propriété intellectuelle.
+      </p>
+      <p>
+        Toute reproduction, représentation, modification, publication, adaptation ou exploitation
+        de tout ou partie des éléments du site, quel que soit le moyen ou le procédé utilisé,
+        est interdite sans l'autorisation écrite préalable de Vite & Gourmand SAS.
+      </p>
+      <p>
+        Toute exploitation non autorisée du site ou de l'un quelconque des éléments qu'il
+        contient sera considérée comme constitutive d'une contrefaçon et poursuivie conformément
+        aux dispositions des articles L.335-2 et suivants du Code de la Propriété Intellectuelle.
+      </p>
+
+      <!-- 5. Données personnelles / RGPD -->
+      <h2>5. Protection des données personnelles</h2>
+
+      <h3>5.1 Responsable du traitement</h3>
+      <p>
+        Vite & Gourmand SAS est responsable du traitement des données personnelles collectées
+        sur le présent site, conformément au Règlement Général sur la Protection des Données
+        (RGPD, UE 2016/679) et à la loi française n° 78-17 du 6 janvier 1978 modifiée dite
+        « Informatique et Libertés ».
+      </p>
+
+      <h3>5.2 Données collectées</h3>
+      <p>Dans le cadre de son activité, Vite & Gourmand collecte les données suivantes :</p>
+      <ul>
+        <li><strong>Données d'identification :</strong> nom, prénom, adresse e-mail, mot de passe (haché)</li>
+        <li><strong>Données de contact :</strong> numéro de téléphone, adresse postale de livraison</li>
+        <li><strong>Données de commande :</strong> menus choisis, dates, montants, historique</li>
+        <li><strong>Données techniques :</strong> adresse IP, cookies de session (voir section 6)</li>
+      </ul>
+
+      <h3>5.3 Finalités du traitement</h3>
+      <p>Vos données sont utilisées pour les finalités suivantes :</p>
+      <ul>
+        <li>Gestion de votre compte et de vos commandes</li>
+        <li>Envoi des notifications transactionnelles (confirmation de commande, changement de statut)</li>
+        <li>Réponse à vos demandes via le formulaire de contact</li>
+        <li>Amélioration de nos services et statistiques d'usage anonymisées</li>
+        <li>Respect de nos obligations légales et comptables</li>
+      </ul>
+
+      <h3>5.4 Durée de conservation</h3>
+      <ul>
+        <li><strong>Compte client actif :</strong> conservation tant que le compte est actif</li>
+        <li><strong>Compte client inactif :</strong> suppression après 3 ans d'inactivité</li>
+        <li><strong>Données de commande :</strong> conservation 10 ans pour obligations comptables</li>
+        <li><strong>Cookies :</strong> voir la section 6 pour les durées spécifiques</li>
+      </ul>
+
+      <h3>5.5 Vos droits</h3>
+      <p>Conformément au RGPD, vous disposez des droits suivants sur vos données :</p>
+      <ul>
+        <li><strong>Droit d'accès</strong> (article 15 RGPD)</li>
+        <li><strong>Droit de rectification</strong> (article 16 RGPD)</li>
+        <li><strong>Droit à l'effacement</strong> — « droit à l'oubli » (article 17 RGPD)</li>
+        <li><strong>Droit à la limitation du traitement</strong> (article 18 RGPD)</li>
+        <li><strong>Droit à la portabilité</strong> (article 20 RGPD)</li>
+        <li><strong>Droit d'opposition</strong> (article 21 RGPD)</li>
+      </ul>
+      <p>
+        Pour exercer ces droits, vous pouvez nous contacter à l'adresse suivante :
+        <a href="mailto:rgpd@vitegourmand.fr">rgpd@vitegourmand.fr</a>. Nous nous engageons à répondre à
+        votre demande dans un délai maximal de 30 jours.
+      </p>
+      <p>
+        En cas de désaccord sur la gestion de vos données, vous avez également le droit
+        d'introduire une réclamation auprès de la Commission Nationale de l'Informatique et
+        des Libertés (CNIL) :
+        <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>.
+      </p>
+
+      <!-- 6. Cookies -->
+      <h2>6. Cookies et traceurs</h2>
+
+      <h3>6.1 Cookies utilisés</h3>
+      <p>Le site Vite & Gourmand utilise uniquement des cookies techniques nécessaires à son fonctionnement :</p>
+      <ul>
+        <li>
+          <strong>Cookie de session (PHPSESSID)</strong> : permet le maintien de votre connexion
+          pendant votre visite. Durée : session (supprimé à la fermeture du navigateur).
+        </li>
+        <li>
+          <strong>Cookie de sécurité CSRF</strong> : protection contre les attaques par falsification
+          de requêtes. Durée : session.
+        </li>
+      </ul>
+      <p>
+        <strong>Aucun cookie publicitaire ou de tracking tiers n'est déposé.</strong> Nous n'utilisons
+        pas Google Analytics, Facebook Pixel ou tout autre traceur commercial.
+      </p>
+
+      <h3>6.2 Configuration</h3>
+      <p>
+        Les cookies techniques utilisés étant strictement nécessaires au fonctionnement du site,
+        aucun consentement préalable n'est requis conformément à la délibération CNIL n° 2020-091.
+        Vous pouvez néanmoins les désactiver via les paramètres de votre navigateur, mais le
+        site pourrait alors ne plus fonctionner correctement.
+      </p>
+
+      <!-- 7. Responsabilité -->
+      <h2>7. Limitation de responsabilité</h2>
+      <p>
+        Vite & Gourmand met tout en œuvre pour fournir des informations fiables et à jour sur
+        son site. Toutefois, l'éditeur ne peut garantir l'exactitude, la précision ou
+        l'exhaustivité des informations mises à disposition.
+      </p>
+      <p>
+        Vite & Gourmand décline toute responsabilité :
+      </p>
+      <ul>
+        <li>Pour toute interruption du site liée à des opérations de maintenance</li>
+        <li>Pour toute inexactitude ou omission portant sur des informations disponibles sur le site</li>
+        <li>Pour tous dommages résultant d'une intrusion frauduleuse d'un tiers ayant entraîné une modification des informations</li>
+        <li>Pour les dommages directs ou indirects, quelles qu'en soient les causes et conséquences, résultant de l'accès et de l'utilisation du site</li>
+      </ul>
+
+      <!-- 8. Liens hypertextes -->
+      <h2>8. Liens hypertextes</h2>
+      <p>
+        Le site Vite & Gourmand peut contenir des liens hypertextes vers d'autres sites internet.
+        Vite & Gourmand n'exerce aucun contrôle sur ces sites et décline toute responsabilité
+        quant à leur contenu.
+      </p>
+
+      <!-- 9. Droit applicable et juridiction compétente -->
+      <h2>9. Droit applicable et juridiction compétente</h2>
+      <p>
+        Les présentes mentions légales sont régies par le droit français. En cas de litige,
+        et à défaut de résolution amiable, les tribunaux français seront seuls compétents.
+        Pour toute réclamation, vous pouvez nous contacter à l'adresse
+        <a href="mailto:contact@vitegourmand.fr">contact@vitegourmand.fr</a>.
+      </p>
+
+      <!-- 10. Contact -->
+      <h2>10. Contact</h2>
+      <p>
+        Pour toute question relative aux présentes mentions légales, vous pouvez nous
+        contacter aux coordonnées suivantes :
+      </p>
+      <ul>
+        <li><strong>Par e-mail :</strong> <a href="mailto:contact@vitegourmand.fr">contact@vitegourmand.fr</a></li>
+        <li><strong>Par courrier :</strong> Vite & Gourmand SAS, 12 rue Sainte-Catherine, 33000 Bordeaux</li>
+        <li><strong>Via le formulaire :</strong> <a href="/contact.html">Page de contact</a></li>
+      </ul>
+
+      <!-- Note de fin (projet pédagogique) -->
+      <div class="mt-12 pt-6 border-t border-nuit/10">
+        <p class="text-xs text-nuit/50 italic">
+          <strong>Note :</strong> Ce site est un projet pédagogique réalisé dans le cadre du titre
+          professionnel Développeur Web et Web Mobile (DWWM) — Studi. Les mentions
+          concernant l'entreprise Vite & Gourmand (SIRET, RCS, TVA) sont fictives et
+          ne correspondent à aucune entité réelle. Toute ressemblance avec une entreprise
+          existante serait purement fortuite.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Retour à l'accueil -->
+    <div class="text-center mt-8">
+      <a href="/index.html" class="inline-flex items-center gap-2 text-rouille hover:text-rouille/80 font-semibold">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Retour à l'accueil
+      </a>
+    </div>
+
+  </main>
+
+  <!-- ══════════════════════════════════════
+       FOOTER SIMPLE
+  ═══════════════════════════════════════ -->
+  <footer class="bg-nuit text-white/70 py-8 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
+      <p>
+        © 2026 Vite & Gourmand SAS — Traiteur artisanal bordelais
+      </p>
+      <p class="mt-2 text-xs">
+        <a href="/mentions-legales.html" class="hover:text-rouille">Mentions légales</a>
+        · <a href="/contact.html" class="hover:text-rouille">Contact</a>
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>
