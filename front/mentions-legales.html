@@ -10,7 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Alpine.js (pour la nav réactive) -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 
   <!-- Polices Google : Playfair Display (titres) + Inter (corps) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,25 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Configuration Tailwind avec palette Vite & Gourmand -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            nuit:    '#1A1208',   // Fond sombre, texte principal
-            creme:   '#F5F0E8',   // Fond clair
-            rouille: '#D4521A',   // Accents principaux (boutons, liens)
-            herbe:   '#4A7C59',   // Succès, validation
-            safran:  '#F0C060',   // Attention, notifications
-          },
-          fontFamily: {
-            display: ['"Playfair Display"', 'serif'],
-            sans:    ['Inter', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
+  <script src="/js/config-tailwind.js"></script>
 
   <style>
     /* Application des polices sur la page */
@@ -102,8 +84,7 @@
   </style>
 </head>
 
-<body x-data="{ menuOpen: false, utilisateur: null }" x-cloak
-      x-init="fetch('/api/auth/me', { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(u => utilisateur = u)">
+<body x-data="pageInformation()" x-cloak>
 
   <!-- ══════════════════════════════════════
        NAV STICKY (cohérente avec le reste du site)
@@ -409,6 +390,9 @@
       </p>
     </div>
   </footer>
+
+  <script src="/js/commun/api.js"></script>
+  <script src="/js/pages/page-information.js"></script>
 
 </body>
 </html>

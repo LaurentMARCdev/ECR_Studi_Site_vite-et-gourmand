@@ -74,6 +74,11 @@ class MenuSerializer
                 $menu->getImages()->toArray()
             ),
             'allergenes_globaux'      => $this->collecterAllergenesUniques($menu),
+            // Identifiants : permettent aux formulaires de gestion (employé / admin)
+            // de pré-cocher thèmes, régimes et plats lors de la modification d'un menu.
+            'theme_ids'               => array_map(fn($t) => $t->getThemeId(), $menu->getThemes()->toArray()),
+            'regime_ids'              => array_map(fn($r) => $r->getRegimeId(), $menu->getRegimes()->toArray()),
+            'plat_ids'                => array_map(fn(Plat $p) => $p->getPlatId(), $menu->getPlats()->toArray()),
             'plats'                   => [
                 'entrees'          => array_map([$this, 'platToArray'], $platsGroupes['entrees']),
                 'plats_principaux' => array_map([$this, 'platToArray'], $platsGroupes['plats_principaux']),
@@ -88,12 +93,14 @@ class MenuSerializer
     public function platToArray(Plat $plat): array
     {
         return [
-            'plat_id'     => $plat->getPlatId(),
-            'nom'         => $plat->getTitre(),
-            'description' => $plat->getDescription(),
-            'categorie'   => $plat->getCategorie(),
-            'image'       => $plat->getImageUrl(),
-            'allergenes'  => array_map(fn($a) => $a->getLibelle(), $plat->getAllergenes()->toArray()),
+            'plat_id'       => $plat->getPlatId(),
+            'nom'           => $plat->getTitre(),   // utilisé par la fiche menu publique
+            'titre'         => $plat->getTitre(),   // même nom que le champ du formulaire de gestion (PlatDTO)
+            'description'   => $plat->getDescription(),
+            'categorie'     => $plat->getCategorie(),
+            'image'         => $plat->getImageUrl(),
+            'allergenes'    => array_map(fn($a) => $a->getLibelle(), $plat->getAllergenes()->toArray()),
+            'allergene_ids' => array_map(fn($a) => $a->getAllergeneId(), $plat->getAllergenes()->toArray()),
         ];
     }
 
