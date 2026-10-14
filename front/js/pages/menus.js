@@ -106,13 +106,6 @@ function menusApp() {
           this.erreur = err.message || 'Une erreur inconnue est survenue.';
         }
 
-        // ── MODE DÉMO (à supprimer quand le back PHP est prêt) ──────────
-        // Données fictives pour développer et tester le front sans back-end
-        this.menus = donneesDemoMenus();
-        this.erreur = null;   // on masque l'erreur en mode démo
-        this.appliquerFiltres();
-        // ────────────────────────────────────────────────────────────────
-
       } finally {
         this.loading = false;
       }
@@ -186,83 +179,4 @@ function menusApp() {
       return map[regime] || '🍴';
     },
   };
-}
-
-// ─── Données de démo (simulant la réponse PHP) ───────────────────────────
-// À supprimer dès que l'API PHP /api/menus est opérationnelle
-function donneesDemoMenus() {
-  return [
-    {
-      menu_id: 1,
-      titre: "Menu de Noël Prestige",
-      description: "Un voyage gustatif pour les fêtes : foie gras maison, chapon rôti aux cèpes et bûche glacée aux marrons.",
-      theme: "Noël",
-      regime: "classique",
-      nombre_personne_minimum: 8,
-      prix_par_personne: 42,
-      quantite_restante: 3,
-      image_url: null,
-      allergenes: ["Gluten", "Lactose", "Œufs"]
-    },
-    {
-      menu_id: 2,
-      titre: "Brunch de Pâques",
-      description: "Viennoiseries, œufs cocotte, saumon fumé et desserts printaniers pour un dimanche en famille.",
-      theme: "Pâques",
-      regime: "classique",
-      nombre_personne_minimum: 6,
-      prix_par_personne: 28,
-      quantite_restante: 8,
-      image_url: null,
-      allergenes: ["Gluten", "Poisson"]
-    },
-    {
-      menu_id: 3,
-      titre: "Menu Végétarien Printemps",
-      description: "Velouté d'asperges, risotto aux légumes de saison et tarte fine aux fruits rouges. 100% végétarien.",
-      theme: "classique",
-      regime: "végétarien",
-      nombre_personne_minimum: 4,
-      prix_par_personne: 24,
-      quantite_restante: 12,
-      image_url: null,
-      allergenes: ["Lactose", "Gluten"]
-    },
-    {
-      menu_id: 4,
-      titre: "Cocktail Dinatoire Événement",
-      description: "45 pièces par personne : verrines, bruschettas, mini-burgers et mignardises. Idéal pour vos réceptions.",
-      theme: "évènement",
-      regime: "classique",
-      nombre_personne_minimum: 20,
-      prix_par_personne: 35,
-      quantite_restante: 5,
-      image_url: null,
-      allergenes: ["Gluten", "Crustacés", "Sulfites"]
-    },
-    {
-      menu_id: 5,
-      titre: "Menu Vegan Terre & Saveurs",
-      description: "Gaspacho de betterave, tajine de légumes aux épices et mousse au chocolat noir. Zéro produit animal.",
-      theme: "classique",
-      regime: "vegan",
-      nombre_personne_minimum: 4,
-      prix_par_personne: 22,
-      quantite_restante: 15,
-      image_url: null,
-      allergenes: ["Fruits à coque"]
-    },
-    {
-      menu_id: 6,
-      titre: "Repas de Noël Familial",
-      description: "Le grand classique : velouté de potiron, dinde farcie et profiteroles pour régaler petits et grands.",
-      theme: "Noël",
-      regime: "classique",
-      nombre_personne_minimum: 10,
-      prix_par_personne: 32,
-      quantite_restante: 0,
-      image_url: null,
-      allergenes: ["Gluten", "Lactose", "Céleri"]
-    },
-  ];
 }

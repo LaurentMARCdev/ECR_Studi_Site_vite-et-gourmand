@@ -221,10 +221,10 @@
           <!-- Titre du menu commandé -->
           <div class="pb-4 border-b border-white/10">
             <p class="text-white/50 text-xs uppercase tracking-wide mb-1">Menu choisi</p>
-            <p class="font-semibold" x-text="menu.titre"></p>
-            <template x-if="menu.themes && menu.themes.length > 0">
+            <p class="font-semibold" x-text="menu?.titre"></p>
+            <template x-if="menu?.themes && menu?.themes.length > 0">
               <p class="text-xs text-white/60 mt-1 capitalize">
-                Thème : <span x-text="menu.themes.join(', ')"></span>
+                Thème : <span x-text="menu?.themes.join(', ')"></span>
               </p>
             </template>
           </div>
@@ -233,7 +233,7 @@
           <div class="py-4 space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-white/70">
-                <span x-text="form.nombrePersonnes"></span> pers. × <span x-text="formatPrix(menu.prix_par_personne)"></span>
+                <span x-text="form.nombrePersonnes"></span> pers. × <span x-text="formatPrix(menu?.prix_par_personne)"></span>
               </span>
               <span class="font-medium" x-text="formatPrix(sousTotalMenu)"></span>
             </div>
@@ -262,17 +262,17 @@
           </div>
 
           <!-- Composition rapide (les plats du menu) -->
-          <template x-if="menu.plats">
+          <template x-if="menu?.plats">
             <div class="mt-6 pt-4 border-t border-white/10">
               <p class="text-white/50 text-xs uppercase tracking-wide mb-2">Composition</p>
               <ul class="space-y-1 text-xs text-white/80">
-                <template x-for="e in (menu.plats.entrees || [])" :key="e.plat_id">
+                <template x-for="e in (menu?.plats.entrees || [])" :key="e.plat_id">
                   <li>• <span x-text="e.nom || e.titre"></span></li>
                 </template>
-                <template x-for="p in (menu.plats.plats_principaux || [])" :key="p.plat_id">
+                <template x-for="p in (menu?.plats.plats_principaux || [])" :key="p.plat_id">
                   <li>• <span x-text="p.nom || p.titre"></span></li>
                 </template>
-                <template x-for="d in (menu.plats.desserts || [])" :key="d.plat_id">
+                <template x-for="d in (menu?.plats.desserts || [])" :key="d.plat_id">
                   <li>• <span x-text="d.nom || d.titre"></span></li>
                 </template>
               </ul>

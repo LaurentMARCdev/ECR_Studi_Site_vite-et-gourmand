@@ -60,11 +60,7 @@ function detailApp() {
         this.nbPersonnes = this.menu.nombre_personne_minimum;
         await this.chargerAutresMenus();
       } catch (err) {
-        // MODE DÉMO — retirer quand le back PHP est prêt
-        this.menu = demoMenu();
-        this.nbPersonnes = this.menu.nombre_personne_minimum;
-        await this.chargerAutresMenus();
-        // FIN MODE DÉMO
+        this.erreur = err.message || 'Impossible de charger ce menu.';
       } finally {
         this.loading = false;
       }
@@ -77,7 +73,7 @@ function detailApp() {
         const tous = await res.json();
         this.autresMenus = tous.filter(m => m.menu_id !== this.menu?.menu_id).slice(0, 3);
       } catch {
-        this.autresMenus = demoAutresMenus().filter(m => m.menu_id !== this.menu?.menu_id);
+        this.autresMenus = [];   // section secondaire : on la masque simplement
       }
     },
 
@@ -155,39 +151,4 @@ function detailApp() {
       document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
     },
   };
-}
-
-// Données de démo — à supprimer quand l'API PHP /api/menus/:id est prête
-function demoMenu() {
-  return {
-    menu_id: 1,
-    titre: "Menu de Noël Prestige",
-    description: "Un voyage gustatif pensé pour les fêtes de fin d'année. Foie gras mi-cuit maison, chapon rôti aux cèpes de Bordeaux et bûche glacée aux marrons. Chaque plat est préparé avec des produits locaux sélectionnés par Julie et José.",
-    theme: "Noël", regime: "classique",
-    nombre_personne_minimum: 8, prix_par_personne: 42, quantite_restante: 3,
-    conditions: "Ce menu doit être commandé au minimum 7 jours avant la date de la prestation. La livraison s'effectue entre 10h et 14h. Le matériel de service (plats, couverts) est fourni en prêt et doit être restitué sous 3 jours ouvrés. Tout retard entraînera des frais de 600 € mentionnés dans les CGV.",
-    images: [],
-    allergenes_globaux: ["Gluten", "Lactose", "Œufs", "Céleri"],
-    plats: {
-      entrees: [
-        { plat_id: 1, nom: "Foie gras mi-cuit maison", description: "Servi avec un chutney de figues et pain brioché toasté.", image: null, allergenes: ["Gluten", "Alcool"] },
-        { plat_id: 2, nom: "Velouté de châtaignes", description: "Crème légère, chips de lard fumé et huile de truffe.", image: null, allergenes: ["Lactose"] },
-      ],
-      plats_principaux: [
-        { plat_id: 3, nom: "Chapon rôti aux cèpes de Bordeaux", description: "Farci à la saucisse et aux herbes, jus de rôti réduit, pommes dauphine.", image: null, allergenes: ["Gluten", "Céleri"] },
-      ],
-      desserts: [
-        { plat_id: 4, nom: "Bûche glacée aux marrons", description: "Insert crème de marron, meringue italienne, éclats de caramel.", image: null, allergenes: ["Lactose", "Œufs"] },
-        { plat_id: 5, nom: "Mignardises de Noël", description: "Truffes au chocolat, rochers coco et pâtes de fruits.", image: null, allergenes: ["Lactose"] },
-      ],
-    },
-  };
-}
-
-function demoAutresMenus() {
-  return [
-    { menu_id: 2, titre: "Brunch de Pâques",            nombre_personne_minimum: 6,  prix_par_personne: 28 },
-    { menu_id: 3, titre: "Menu Végétarien Printemps",    nombre_personne_minimum: 4,  prix_par_personne: 24 },
-    { menu_id: 4, titre: "Cocktail Dinatoire Événement", nombre_personne_minimum: 20, prix_par_personne: 35 },
-  ];
 }

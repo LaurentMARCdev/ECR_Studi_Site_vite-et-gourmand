@@ -2,19 +2,24 @@ function app() {
   return {
     menuOpen: false,
 
-    // Horaires pied de page
-    horaires: [
-      { jour: 'Lundi',    heure: '08h00 – 19h00' },
-      { jour: 'Mardi',    heure: '08h00 – 19h00' },
-      { jour: 'Mercredi', heure: '08h00 – 19h00' },
-      { jour: 'Jeudi',    heure: '08h00 – 19h00' },
-      { jour: 'Vendredi', heure: '08h00 – 20h00' },
-      { jour: 'Samedi',   heure: '09h00 – 18h00' },
-      { jour: 'Dimanche', heure: 'Fermé' },
-    ],
+    // Horaires du pied de page (GET /api/horaires, modifiables par les employés)
+    horaires: [],
 
     init() {
       this.initReveal();
+      this.chargerHoraires();
+    },
+
+    async chargerHoraires() {
+      try {
+        const liste = await apiFetch('/horaires');
+        this.horaires = liste.map(h => ({
+          jour:  h.jour,
+          heure: h.ferme ? 'Fermé' : `${h.heure_ouverture.replace(':', 'h')} – ${h.heure_fermeture.replace(':', 'h')}`,
+        }));
+      } catch {
+        this.horaires = [];   // le pied de page reste lisible sans les horaires
+      }
     },
 
     // Révélation au scroll via IntersectionObserver
@@ -32,32 +37,18 @@ function app() {
   }
 }
 
-// Données avis clients (simulées — viendront de la BDD côté back-end)
+// Avis clients publiés (validés par un employé) : GET /api/avis
+// Format RGPD renvoyé par l'API : prénom + initiale du nom uniquement.
 function avisCarousel() {
   return {
-    // Seuls les avis avec statut "validé" sont affichés
-    avisVisibles: [
-      {
-        note: 5,
-        commentaire: "Prestation exceptionnelle pour notre réveillon de Noël. Les plats étaient savoureux et la livraison parfaitement ponctuelle. Nous recommandons sans hésiter.",
-        prenom: "Marie",
-        nom: "Dupont",
-        evenement: "Réveillon de Noël"
-      },
-      {
-        note: 5,
-        commentaire: "Menu de Pâques magnifique, généreux et plein de saveurs. Julie et José ont su s'adapter à nos contraintes alimentaires avec beaucoup de professionnalisme.",
-        prenom: "Thomas",
-        nom: "Bernard",
-        evenement: "Repas de Pâques"
-      },
-      {
-        note: 4,
-        commentaire: "Très bon rapport qualité-prix pour notre séminaire d'entreprise. Le menu végétarien était particulièrement réussi. Nous ferons à nouveau appel à eux.",
-        prenom: "Sophie",
-        nom: "Martin",
-        evenement: "Séminaire d'entreprise"
+    avisVisibles: [],
+
+    async init() {
+      try {
+        this.avisVisibles = await apiFetch('/avis?limite=6');
+      } catch {
+        this.avisVisibles = [];
       }
-    ]
-  }
+    },
+  };
 }

@@ -68,6 +68,16 @@ class SyncMongoCommand extends Command
         }
         $io->progressFinish();
 
+        // Les documents dont la commande n'existe plus dans PostgreSQL
+        // (base réinitialisée, données de test supprimées) faussent les statistiques.
+        $ids = array_map(fn($c) => $c->getCommandeId(), $toutes);
+        $obsoletes = $this->mongo->collection(StatistiquesService::COLLECTION)
+            ->deleteMany(['commande_id' => ['$nin' => $ids]])
+            ->getDeletedCount();
+        if ($obsoletes > 0) {
+            $io->note(sprintf('%d document(s) obsolète(s) supprimé(s) de MongoDB.', $obsoletes));
+        }
+
         $io->success(sprintf('%d commande(s) synchronisée(s) vers MongoDB.', $ok));
 
         // Relecture depuis MongoDB : preuve que les données sont bien dans la base NoSQL

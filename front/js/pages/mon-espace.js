@@ -12,7 +12,8 @@ function espaceApp() {
 
     // États formulaires
     profil:      { prenom:'', nom:'', email:'', gsm:'', adresse:'', mdpActuel:'', mdpNouveau:'', mdpConfirm:'', chargement:false, succes:false, erreur:null, erreurs:{} },
-    modification:{ chargement:false },
+    modification:{ chargement:false, erreur:null },
+    erreurCommandes: null,
     annulation:  { chargement:false, erreur:null },
     avis:        { note:0, commentaire:'', chargement:false, succes:false, erreur:null, erreurs:{} },
 
@@ -27,45 +28,35 @@ function espaceApp() {
     // ── Chargement profil ─────────────────────────────────
     async chargerProfil() {
       try {
-        /*
-         * GET /api/auth/me
-         * Réponse : { utilisateur_id, prenom, nom, email, gsm, adresse, role }
-         */
-        const res = await fetch(`${API_BASE}/auth/me`, { credentials:'include', headers:{'Accept':'application/json'} });
-        if (!res.ok) { window.location.href = '/connexion'; return; }
-        this.utilisateur = await res.json();
-        // Pré-remplir le formulaire profil
-        Object.assign(this.profil, {
-          prenom:  this.utilisateur.prenom,
-          nom:     this.utilisateur.nom,
-          email:   this.utilisateur.email,
-          gsm:     this.utilisateur.gsm,
-          adresse: this.utilisateur.adresse,
-        });
+        this.utilisateur = await apiFetch('/auth/me');
       } catch {
-        // MODE DÉMO
-        this.utilisateur = { utilisateur_id:1, prenom:'Marie', nom:'Dupont', email:'marie@exemple.fr', gsm:'+33612345678', adresse:'12 rue des Chartrons, 33000 Bordeaux', role:'utilisateur' };
-        Object.assign(this.profil, { prenom:'Marie', nom:'Dupont', email:'marie@exemple.fr', gsm:'+33612345678', adresse:'12 rue des Chartrons, 33000 Bordeaux' });
+        window.location.href = '/connexion';
+        return;
       }
+      // Pré-remplir le formulaire profil
+      Object.assign(this.profil, {
+        prenom:  this.utilisateur.prenom,
+        nom:     this.utilisateur.nom,
+        email:   this.utilisateur.email,
+        gsm:     this.utilisateur.gsm,
+        adresse: this.utilisateur.adresse,
+      });
     },
 
     // ── Chargement commandes ──────────────────────────────
     async chargerCommandes() {
+      this.erreurCommandes = null;
       try {
-        /*
-         * GET /api/commandes/mes-commandes
-         * Réponse : [{ numero_commande, menu_titre, menu_id, statut,
-         *               date_prestation, heure_livraison, adresse_livraison,
-         *               nombre_personnes, nombre_personnes_minimum,
-         *               prix_menu, prix_livraison, prix_total,
-         *               avis_donne, historique_statuts: [{statut, date}] }]
-         */
-        const res = await fetch(`${API_BASE}/commandes/mes-commandes`, { credentials:'include', headers:{'Accept':'application/json'} });
-        if (!res.ok) throw new Error();
-        this.commandes = await res.json();
-      } catch {
-        // MODE DÉMO
-        this.commandes = demoCommandes();
+        const [commandes, mesAvis] = await Promise.all([
+          apiFetch('/commandes/mes-commandes'),
+          apiFetch('/avis/mes-avis'),
+        ]);
+        // Une commande ne peut recevoir qu'un avis : on masque le bouton si déjà donné
+        const commandesNotees = new Set(mesAvis.map(a => a.numero_commande));
+        this.commandes = commandes.map(c => ({ ...c, avis_donne: commandesNotees.has(c.numero_commande) }));
+      } catch (e) {
+        this.commandes = [];
+        this.erreurCommandes = 'Impossible de charger vos commandes : ' + e.message;
       }
     },
 
@@ -96,9 +87,7 @@ function espaceApp() {
          */
         const body = { prenom:this.profil.prenom, nom:this.profil.nom, email:this.profil.email, gsm:this.profil.gsm, adresse:this.profil.adresse };
         if (this.profil.mdpNouveau) { body.mdpActuel = this.profil.mdpActuel; body.mdpNouveau = this.profil.mdpNouveau; }
-        const res = await fetch(`${API_BASE}/utilisateurs/profil`, { method:'PUT', credentials:'include', headers:{'Content-Type':'application/json','Accept':'application/json'}, body:JSON.stringify(body) });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.erreur || 'Erreur lors de la mise à jour.');
+        await apiFetch('/utilisateurs/profil', { method: 'PUT', body });
         this.profil.succes = true;
         this.profil.mdpActuel = ''; this.profil.mdpNouveau = ''; this.profil.mdpConfirm = '';
         this.utilisateur.prenom = this.profil.prenom;
@@ -118,34 +107,25 @@ function espaceApp() {
 
     async soumettreModification() {
       this.modification.chargement = true;
+      this.modification.erreur = null;
+      const c = this.cmdEnCours;
       try {
-        /*
-         * PUT /api/commandes/:numero/modifier
-         * Body : { adresse_livraison, date_prestation, heure_livraison, nombre_personnes }
-         * Réponse 200 : commande mise à jour
-         */
-        const res = await fetch(`${API_BASE}/commandes/${this.cmdEnCours.numero_commande}/modifier`, {
-          method:'PUT', credentials:'include',
-          headers:{'Content-Type':'application/json','Accept':'application/json'},
-          body: JSON.stringify({
-            adresse_livraison: this.cmdEnCours.adresse_livraison,
-            date_prestation:   this.cmdEnCours.date_prestation,
-            heure_livraison:   this.cmdEnCours.heure_livraison,
-            nombre_personnes:  this.cmdEnCours.nombre_personnes,
-          }),
+        // Corps attendu par ModifierCommandeDTO (le menu ne peut pas être changé)
+        await apiFetch(`/commandes/${c.numero_commande}/modifier`, {
+          method: 'PUT',
+          body: {
+            adresseLivraison: c.adresse_livraison,
+            villeLivraison:   c.ville_livraison,
+            datePrestation:   c.date_prestation,
+            heureLivraison:   c.heure_livraison,
+            nombrePersonnes:  Number(c.nombre_personnes),
+          },
         });
-        if (!res.ok) throw new Error();
-        // Mettre à jour la commande localement
-        const idx = this.commandes.findIndex(c => c.numero_commande === this.cmdEnCours.numero_commande);
-        if (idx !== -1) this.commandes[idx] = { ...this.commandes[idx], ...this.cmdEnCours };
+        await this.chargerCommandes();   // prix recalculés côté serveur
         this.modales.modification = false;
         this.afficherToast('Commande modifiée avec succès.');
-      } catch {
-        // Mode démo : simuler la mise à jour
-        const idx = this.commandes.findIndex(c => c.numero_commande === this.cmdEnCours.numero_commande);
-        if (idx !== -1) this.commandes[idx] = { ...this.commandes[idx], ...this.cmdEnCours };
-        this.modales.modification = false;
-        this.afficherToast('Commande modifiée avec succès.');
+      } catch (e) {
+        this.modification.erreur = e.message;
       } finally {
         this.modification.chargement = false;
       }
@@ -162,22 +142,13 @@ function espaceApp() {
       this.annulation.chargement = true;
       this.annulation.erreur = null;
       try {
-        /*
-         * DELETE /api/commandes/:numero
-         * Réponse 200 : { message: "Commande annulée" }
-         */
-        const res = await fetch(`${API_BASE}/commandes/${this.cmdEnCours.numero_commande}`, {
-          method:'DELETE', credentials:'include', headers:{'Accept':'application/json'},
-        });
-        if (!res.ok) throw new Error('Impossible d\'annuler cette commande.');
-        this.commandes = this.commandes.filter(c => c.numero_commande !== this.cmdEnCours.numero_commande);
+        await apiFetch(`/commandes/${this.cmdEnCours.numero_commande}`, { method: 'DELETE' });
+        this.cmdEnCours.statut = 'annulee';
+        await this.chargerCommandes();
         this.modales.annulation = false;
         this.afficherToast('Commande annulée.');
-      } catch (err) {
-        // Mode démo
-        this.commandes = this.commandes.filter(c => c.numero_commande !== this.cmdEnCours.numero_commande);
-        this.modales.annulation = false;
-        this.afficherToast('Commande annulée.');
+      } catch (e) {
+        this.annulation.erreur = e.message;
       } finally {
         this.annulation.chargement = false;
       }
@@ -198,25 +169,16 @@ function espaceApp() {
       this.avis.chargement = true;
       this.avis.erreur = null;
       try {
-        /*
-         * POST /api/commandes/:numero/avis
-         * Body : { note, commentaire }
-         * Réponse 201 : { message: "Avis enregistré" }
-         */
-        const res = await fetch(`${API_BASE}/commandes/${this.cmdEnCours.numero_commande}/avis`, {
-          method:'POST', credentials:'include',
-          headers:{'Content-Type':'application/json','Accept':'application/json'},
-          body: JSON.stringify({ note:this.avis.note, commentaire:this.avis.commentaire }),
+        // POST /api/avis : l'avis reste "en attente" jusqu'à sa validation par un employé
+        await apiFetch('/avis', {
+          method: 'POST',
+          body: { numeroCommande: this.cmdEnCours.numero_commande, note: this.avis.note, commentaire: this.avis.commentaire },
         });
-        if (!res.ok) throw new Error('Impossible d\'envoyer votre avis.');
-        const idx = this.commandes.findIndex(c => c.numero_commande === this.cmdEnCours.numero_commande);
-        if (idx !== -1) this.commandes[idx].avis_donne = true;
+        const cmd = this.commandes.find(c => c.numero_commande === this.cmdEnCours.numero_commande);
+        if (cmd) cmd.avis_donne = true;
         this.avis.succes = true;
-      } catch {
-        // Mode démo
-        const idx = this.commandes.findIndex(c => c.numero_commande === this.cmdEnCours.numero_commande);
-        if (idx !== -1) this.commandes[idx].avis_donne = true;
-        this.avis.succes = true;
+      } catch (e) {
+        this.avis.erreur = e.message;
       } finally {
         this.avis.chargement = false;
       }
@@ -283,67 +245,4 @@ function espaceApp() {
       setTimeout(() => { this.toast.visible = false; }, 3000);
     },
   };
-}
-
-// ── Données de démo ──────────────────────────────────────
-function demoCommandes() {
-  return [
-    {
-      numero_commande: 'VG-2025-0042',
-      menu_titre: 'Menu de Noël Prestige',
-      menu_id: 1,
-      statut: 'en_preparation',
-      date_prestation: '2025-12-24',
-      heure_livraison: '12:00',
-      adresse_livraison: '12 rue des Chartrons, 33000 Bordeaux',
-      nombre_personnes: 10,
-      nombre_personnes_minimum: 8,
-      prix_menu: 378,
-      prix_livraison: 5,
-      prix_total: 383,
-      avis_donne: false,
-      historique_statuts: [
-        { statut:'accepte',        date:'2025-12-15T09:30:00' },
-        { statut:'en_preparation', date:'2025-12-23T08:00:00' },
-      ],
-    },
-    {
-      numero_commande: 'VG-2025-0031',
-      menu_titre: 'Brunch de Pâques',
-      menu_id: 2,
-      statut: 'terminee',
-      date_prestation: '2025-04-20',
-      heure_livraison: '10:30',
-      adresse_livraison: '5 allée des Mimosas, 33700 Mérignac',
-      nombre_personnes: 6,
-      nombre_personnes_minimum: 6,
-      prix_menu: 168,
-      prix_livraison: 10.31,
-      prix_total: 178.31,
-      avis_donne: false,
-      historique_statuts: [
-        { statut:'accepte',            date:'2025-04-10T14:00:00' },
-        { statut:'en_preparation',     date:'2025-04-20T07:00:00' },
-        { statut:'en_cours_livraison', date:'2025-04-20T09:45:00' },
-        { statut:'livre',              date:'2025-04-20T10:28:00' },
-        { statut:'terminee',           date:'2025-04-20T10:28:00' },
-      ],
-    },
-    {
-      numero_commande: 'VG-2025-0058',
-      menu_titre: 'Cocktail Dinatoire Événement',
-      menu_id: 4,
-      statut: 'en_attente',
-      date_prestation: '2026-01-15',
-      heure_livraison: '19:00',
-      adresse_livraison: '3 place de la Bourse, 33000 Bordeaux',
-      nombre_personnes: 25,
-      nombre_personnes_minimum: 20,
-      prix_menu: 787.50,
-      prix_livraison: 5,
-      prix_total: 792.50,
-      avis_donne: false,
-      historique_statuts: [],
-    },
-  ];
 }
