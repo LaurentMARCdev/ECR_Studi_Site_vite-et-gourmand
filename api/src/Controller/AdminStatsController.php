@@ -54,7 +54,8 @@ class AdminStatsController extends AbstractController
     public function chiffreAffaires(Request $request): JsonResponse
     {
         $debut = $this->parseDate($request->query->get('debut'));
-        $fin   = $this->parseDate($request->query->get('fin'));
+        // "Au 31/10" doit inclure les commandes passées ce jour-là : fin de journée
+        $fin   = $this->parseDate($request->query->get('fin'))?->setTime(23, 59, 59);
 
         return $this->json($this->stats->chiffreAffairesParMenu($debut, $fin));
     }

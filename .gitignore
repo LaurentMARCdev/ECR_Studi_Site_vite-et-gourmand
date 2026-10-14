@@ -1,0 +1,8 @@
+# Variables d'environnement Docker (secrets locaux)
+.env
+.env.local
+
+# Système / IDE
+.DS_Store
+.idea/
+.vscode/

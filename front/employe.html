@@ -6,34 +6,15 @@
   <title>Espace employé – Vite & Gourmand</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            nuit:    '#1A1208',
-            creme:   '#F5F0E8',
-            rouille: '#D4521A',
-            herbe:   '#4A7C59',
-            safran:  '#F0C060',
-            foret:   '#1C2B1A',   // sidebar employé — vert forêt très sombre
-            foretHover: '#253524',
-          },
-          fontFamily: {
-            display: ['"Playfair Display"', 'serif'],
-            body:    ['Inter', 'sans-serif'],
-          },
-        }
-      }
-    }
-  </script>
+  <script src="/js/config-tailwind.js"></script>
 
   <style>
+    [x-cloak] { display:none !important; }
     html { scroll-behavior: smooth; }
     body { font-family: 'Inter', sans-serif; background: #F3F4F6; color: #1A1208; }
 
@@ -97,7 +78,7 @@
   </style>
 </head>
 
-<body x-data="employeApp()" x-init="init()" class="flex">
+<body x-data="employeApp()" class="flex">
 
   <!-- ══════════════════════════════════════
        SIDEBAR EMPLOYÉ
@@ -192,6 +173,11 @@
     </div>
 
     <main class="flex-1 p-8" id="main-content">
+
+      <!-- Erreur de chargement / d'enregistrement de la section affichée -->
+      <div x-show="erreurSection()" x-cloak
+           class="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded"
+           role="alert" x-text="erreurSection()"></div>
 
       <!-- ═══════════════════════════════════
            SECTION COMMANDES
@@ -401,7 +387,7 @@
       <div x-show="section==='menus'" role="region" aria-label="Gestion des menus et plats">
 
         <div class="flex justify-between items-center mb-4">
-          <p class="text-sm text-gray-500"><span x-text="menus.length"></span> menu(s)</p>
+          <p class="text-sm text-gray-500"><span x-text="menusListe.length"></span> menu(s) à la carte</p>
           <button @click="ouvrirNouveauMenu()"
                   class="font-semibold text-sm px-4 py-2.5 rounded hover:opacity-90 transition-opacity flex items-center gap-2"
                   style="background:#F0C060; color:#1A1208;">
@@ -424,14 +410,14 @@
               </tr>
             </thead>
             <tbody>
-              <template x-for="menu in menus" :key="menu.menu_id">
+              <template x-for="menu in menusListe" :key="menu.menu_id">
                 <tr class="tbl-row">
                   <td>
                     <p class="font-semibold text-nuit text-sm" x-text="menu.titre"></p>
                     <p class="text-xs text-gray-400 truncate max-w-xs" x-text="menu.description"></p>
                   </td>
-                  <td class="text-sm" x-text="menu.theme"></td>
-                  <td class="text-sm" x-text="menu.regime"></td>
+                  <td class="text-sm capitalize" x-text="(menu.themes || []).join(', ')"></td>
+                  <td class="text-sm capitalize" x-text="(menu.regimes || []).join(', ')"></td>
                   <td class="text-sm font-medium" x-text="menu.nombre_personne_minimum + ' pers.'"></td>
                   <td class="text-sm font-bold text-rouille" x-text="formatPrix(menu.prix_par_personne)"></td>
                   <td>
@@ -447,6 +433,62 @@
                       <button @click="supprimerMenu(menu)"
                               class="text-xs border border-red-200 text-red-500 px-3 py-1.5 rounded hover:bg-red-50 transition-colors"
                               :aria-label="'Supprimer le menu ' + menu.titre">Supprimer</button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+
+      <!-- ═══════════════════════════════════
+           SOUS-SECTION PLATS (Menus & plats)
+      ════════════════════════════════════ -->
+      <div x-show="section==='menus'" class="mt-8" role="region" aria-label="Gestion des plats">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="font-display text-xl font-bold text-nuit">Catalogue des plats</h2>
+            <p class="text-sm text-gray-500"><span x-text="platsListe.length"></span> plat(s) disponibles pour composer les menus</p>
+          </div>
+          <button @click="ouvrirNouveauPlat()"
+                  class="font-semibold text-sm px-4 py-2.5 rounded hover:opacity-90 transition-opacity flex items-center gap-2 bg-foret text-white">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nouveau plat
+          </button>
+        </div>
+
+        <div class="bg-white rounded border border-gray-200 overflow-x-auto">
+          <table class="w-full" aria-label="Liste des plats">
+            <thead class="tbl-head">
+              <tr>
+                <th scope="col">Plat</th>
+                <th scope="col">Catégorie</th>
+                <th scope="col">Allergènes</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-if="platsListe.length === 0">
+                <tr><td colspan="4" class="text-center text-gray-400 py-6 italic">Aucun plat pour l'instant. Créez-en un pour composer vos menus.</td></tr>
+              </template>
+              <template x-for="plat in platsListe" :key="plat.plat_id">
+                <tr class="tbl-row">
+                  <td>
+                    <p class="font-semibold text-nuit text-sm" x-text="plat.titre"></p>
+                    <p class="text-xs text-gray-400 truncate max-w-xs" x-text="plat.description"></p>
+                  </td>
+                  <td class="text-sm" x-text="(categoriesPlat.find(c => c.val === plat.categorie) || {}).label"></td>
+                  <td class="text-xs text-gray-500" x-text="plat.allergenes.length ? plat.allergenes.join(', ') : 'aucun'"></td>
+                  <td>
+                    <div class="flex gap-2">
+                      <button @click="ouvrirEditionPlat(plat)"
+                              class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-200 transition-colors"
+                              :aria-label="'Modifier le plat ' + plat.titre">Modifier</button>
+                      <button @click="supprimerPlat(plat)"
+                              class="text-xs border border-red-200 text-red-500 px-3 py-1.5 rounded hover:bg-red-50 transition-colors"
+                              :aria-label="'Supprimer le plat ' + plat.titre">Supprimer</button>
                     </div>
                   </td>
                 </tr>
@@ -668,14 +710,13 @@
   <!-- ══════════════════════════════════════
        MODALE : CRÉER / MODIFIER MENU
   ═══════════════════════════════════════ -->
-  <div x-show="modales.menu" x-transition
+  <div x-show="modales.menu" x-transition x-cloak
        class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
        role="dialog" aria-modal="true" aria-labelledby="modale-menu-emp-titre"
        @keydown.escape.window="modales.menu=false" @click.self="modales.menu=false">
-    <div class="bg-white rounded shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
+    <div class="bg-white rounded shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
 
-      <div class="flex justify-between items-center p-6 border-b border-gray-100">
+      <div class="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
         <h2 id="modale-menu-emp-titre" class="font-display text-xl font-bold text-nuit"
             x-text="menuForm.menu_id ? 'Modifier le menu' : 'Nouveau menu'"></h2>
         <button @click="modales.menu=false" class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-foret rounded" aria-label="Fermer">
@@ -687,7 +728,7 @@
         <div class="grid sm:grid-cols-2 gap-4">
           <div class="sm:col-span-2">
             <label for="mf-titre" class="block text-sm font-semibold text-nuit mb-1">Titre <span class="text-rouille" aria-hidden="true">*</span></label>
-            <input id="mf-titre" type="text" x-model="menuForm.titre" class="field" required :class="menuFormErr.titre?'err':''"/>
+            <input id="mf-titre" type="text" x-model="menuForm.titre" class="field" required maxlength="150" :class="menuFormErr.titre?'err':''"/>
             <p x-show="menuFormErr.titre" class="text-red-600 text-xs mt-1" x-text="menuFormErr.titre" role="alert"></p>
           </div>
           <div class="sm:col-span-2">
@@ -695,41 +736,74 @@
             <textarea id="mf-desc" rows="3" x-model="menuForm.description" class="field resize-none" required></textarea>
           </div>
           <div>
-            <label for="mf-theme" class="block text-sm font-semibold text-nuit mb-1">Thème <span class="text-rouille" aria-hidden="true">*</span></label>
-            <select id="mf-theme" x-model="menuForm.theme" class="field" required>
-              <option value="">Choisir…</option>
-              <option value="Noël">Noël</option>
-              <option value="Pâques">Pâques</option>
-              <option value="classique">Classique</option>
-              <option value="évènement">Événement</option>
-            </select>
-          </div>
-          <div>
-            <label for="mf-regime" class="block text-sm font-semibold text-nuit mb-1">Régime <span class="text-rouille" aria-hidden="true">*</span></label>
-            <select id="mf-regime" x-model="menuForm.regime" class="field" required>
-              <option value="">Choisir…</option>
-              <option value="classique">Classique</option>
-              <option value="végétarien">Végétarien</option>
-              <option value="vegan">Vegan</option>
-            </select>
+            <label for="mf-prix" class="block text-sm font-semibold text-nuit mb-1">Prix / personne (€) <span class="text-rouille" aria-hidden="true">*</span></label>
+            <input id="mf-prix" type="number" min="0.01" step="0.01" x-model.number="menuForm.prixParPersonne" class="field" required />
           </div>
           <div>
             <label for="mf-pers" class="block text-sm font-semibold text-nuit mb-1">Personnes minimum <span class="text-rouille" aria-hidden="true">*</span></label>
-            <input id="mf-pers" type="number" min="1" x-model.number="menuForm.nombre_personne_minimum" class="field" required />
-          </div>
-          <div>
-            <label for="mf-prix" class="block text-sm font-semibold text-nuit mb-1">Prix / personne (€) <span class="text-rouille" aria-hidden="true">*</span></label>
-            <input id="mf-prix" type="number" min="0" step="0.01" x-model.number="menuForm.prix_par_personne" class="field" required />
+            <input id="mf-pers" type="number" min="1" step="1" x-model.number="menuForm.nombrePersonneMinimum" class="field" required />
           </div>
           <div>
             <label for="mf-stock" class="block text-sm font-semibold text-nuit mb-1">Stock disponible</label>
-            <input id="mf-stock" type="number" min="0" x-model.number="menuForm.quantite_restante" class="field" placeholder="Vide = illimité" />
+            <input id="mf-stock" type="number" min="0" step="1" x-model.number="menuForm.quantiteRestante" class="field" placeholder="Vide = illimité" />
+          </div>
+          <div class="flex items-end pb-2">
+            <label class="flex items-center gap-2 text-sm font-semibold text-nuit cursor-pointer">
+              <input type="checkbox" x-model="menuForm.actif" class="accent-foret w-4 h-4" />
+              Menu visible à la carte
+            </label>
           </div>
           <div class="sm:col-span-2">
             <label for="mf-cond" class="block text-sm font-semibold text-nuit mb-1">Conditions</label>
             <textarea id="mf-cond" rows="2" x-model="menuForm.conditions" class="field resize-none" placeholder="Délai de commande, précautions de stockage…"></textarea>
           </div>
         </div>
+
+        <fieldset>
+          <legend class="block text-sm font-semibold text-nuit mb-2">Thèmes <span class="text-rouille" aria-hidden="true">*</span> <span class="font-normal text-gray-400">(au moins un)</span></legend>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 border border-gray-200 rounded p-3">
+            <template x-for="t in themesListe" :key="t.theme_id">
+              <label class="flex items-center gap-2 text-sm cursor-pointer capitalize">
+                <input type="checkbox" :value="t.theme_id" x-model.number="menuForm.themeIds" class="accent-foret w-4 h-4" />
+                <span x-text="t.libelle"></span>
+              </label>
+            </template>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend class="block text-sm font-semibold text-nuit mb-2">Régimes <span class="text-rouille" aria-hidden="true">*</span> <span class="font-normal text-gray-400">(au moins un)</span></legend>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-2 border border-gray-200 rounded p-3">
+            <template x-for="r in regimesListe" :key="r.regime_id">
+              <label class="flex items-center gap-2 text-sm cursor-pointer capitalize">
+                <input type="checkbox" :value="r.regime_id" x-model.number="menuForm.regimeIds" class="accent-foret w-4 h-4" />
+                <span x-text="r.libelle"></span>
+              </label>
+            </template>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend class="block text-sm font-semibold text-nuit mb-2">Plats composant le menu <span class="text-rouille" aria-hidden="true">*</span> <span class="font-normal text-gray-400">(au moins un)</span></legend>
+          <p x-show="platsListe.length === 0" class="text-sm text-red-600 italic">Aucun plat au catalogue : créez d'abord des plats.</p>
+          <div class="space-y-3" x-show="platsListe.length > 0">
+            <template x-for="cat in categoriesPlat" :key="cat.val">
+              <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 mb-1 font-semibold" x-text="cat.label"></p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 border border-gray-200 rounded p-3">
+                  <template x-for="pl in platsDeCategorie(cat.val)" :key="pl.plat_id">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                      <input type="checkbox" :value="pl.plat_id" x-model.number="menuForm.platIds" class="accent-foret w-4 h-4" />
+                      <span x-text="pl.titre"></span>
+                    </label>
+                  </template>
+                  <p x-show="platsDeCategorie(cat.val).length === 0" class="text-xs text-gray-400 italic">Aucun plat dans cette catégorie</p>
+                </div>
+              </div>
+            </template>
+          </div>
+          <p class="text-xs text-gray-500 mt-1"><span x-text="menuForm.platIds.length"></span> plat(s) sélectionné(s)</p>
+        </fieldset>
 
         <div x-show="menuFormErr.global" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded" role="alert" x-text="menuFormErr.global"></div>
 
@@ -738,9 +812,81 @@
                   class="flex-1 font-bold py-3 rounded hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                   style="background:#F0C060; color:#1A1208;">
             <span class="spin" style="border-top-color:#1A1208; border-color:rgba(26,18,8,.2)" x-show="menuForm.chargement" aria-hidden="true"></span>
-            <span x-text="menuForm.chargement ? 'Enregistrement…' : (menuForm.menu_id ? 'Enregistrer' : 'Créer le menu')"></span>
+            <span x-text="menuForm.chargement ? 'Patientez…' : (menuForm.menu_id ? 'Enregistrer' : 'Créer le menu')"></span>
           </button>
           <button type="button" @click="modales.menu=false"
+                  class="px-6 border border-gray-200 text-gray-600 font-semibold py-3 rounded hover:bg-gray-50 transition-colors">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       MODALE : CRÉER / MODIFIER PLAT
+  ═══════════════════════════════════════ -->
+  <div x-show="modales.plat" x-transition x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
+       role="dialog" aria-modal="true" aria-labelledby="modale-plat-emp-titre"
+       @keydown.escape.window="modales.plat=false" @click.self="modales.plat=false">
+    <div class="bg-white rounded shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+
+      <div class="flex justify-between items-center p-6 border-b border-gray-100">
+        <h2 id="modale-plat-emp-titre" class="font-display text-xl font-bold text-nuit"
+            x-text="platForm.plat_id ? 'Modifier le plat' : 'Nouveau plat'"></h2>
+        <button @click="modales.plat=false" class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-foret rounded" aria-label="Fermer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form @submit.prevent="soumettrePlat()" novalidate class="p-6 space-y-4">
+        <div>
+          <label for="pf-titre" class="block text-sm font-semibold text-nuit mb-1">Titre <span class="text-rouille" aria-hidden="true">*</span></label>
+          <input id="pf-titre" type="text" x-model="platForm.titre" class="field" required maxlength="150" placeholder="Ex : Tataki de bœuf" :class="platFormErr.titre?'err':''" />
+          <p x-show="platFormErr.titre" class="text-red-600 text-xs mt-1" x-text="platFormErr.titre" role="alert"></p>
+        </div>
+        <div>
+          <label for="pf-desc" class="block text-sm font-semibold text-nuit mb-1">Description</label>
+          <textarea id="pf-desc" rows="2" maxlength="500" x-model="platForm.description" class="field resize-none"></textarea>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label for="pf-cat" class="block text-sm font-semibold text-nuit mb-1">Catégorie <span class="text-rouille" aria-hidden="true">*</span></label>
+            <select id="pf-cat" x-model="platForm.categorie" class="field" required>
+              <template x-for="cat in categoriesPlat" :key="cat.val">
+                <option :value="cat.val" x-text="cat.label" :selected="cat.val === platForm.categorie"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label for="pf-img" class="block text-sm font-semibold text-nuit mb-1">Image (chemin ou URL)</label>
+            <input id="pf-img" type="text" maxlength="255" x-model="platForm.imageUrl" class="field" placeholder="/media/menus/plat.jpg" />
+          </div>
+        </div>
+        <fieldset>
+          <legend class="block text-sm font-semibold text-nuit mb-2">Allergènes présents</legend>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto border border-gray-200 rounded p-3">
+            <template x-for="a in allergenesListe" :key="a.allergene_id">
+              <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" :value="a.allergene_id" x-model.number="platForm.allergeneIds" class="accent-foret w-4 h-4" />
+                <span x-text="a.libelle"></span>
+              </label>
+            </template>
+          </div>
+        </fieldset>
+
+        <div x-show="platFormErr.global" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded" role="alert" x-text="platFormErr.global"></div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="submit" :disabled="platForm.chargement"
+                  class="flex-1 font-bold py-3 rounded hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                  style="background:#F0C060; color:#1A1208;">
+            <span class="spin" style="border-top-color:#1A1208; border-color:rgba(26,18,8,.2)" x-show="platForm.chargement" aria-hidden="true"></span>
+            <span x-text="platForm.chargement ? 'Enregistrement…' : (platForm.plat_id ? 'Enregistrer' : 'Créer le plat')"></span>
+          </button>
+          <button type="button" @click="modales.plat=false"
                   class="px-6 border border-gray-200 text-gray-600 font-semibold py-3 rounded hover:bg-gray-50 transition-colors">
             Annuler
           </button>
@@ -792,7 +938,7 @@
           <p x-show="annulation.erreurs.motif" class="text-red-600 text-xs mt-1" x-text="annulation.erreurs.motif" role="alert"></p>
         </div>
 
-        <div x-show="annulation.erreur" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded" role="alert" x-text="annulation.erreur"></div>
+        <div x-show="annulation.erreurs.global" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded" role="alert" x-text="annulation.erreurs.global"></div>
 
         <div class="flex gap-3 pt-1">
           <button type="submit" :disabled="annulation.chargement"
@@ -811,352 +957,10 @@
   <div x-show="toast.visible" x-transition class="toast" role="status" aria-live="polite" x-text="toast.message"></div>
 
 
-  <!-- ══════════════════════════════════════
-       SCRIPT
-  ═══════════════════════════════════════ -->
-  <script>
-    const API_BASE = '/api';
-
-    function employeApp() {
-      return {
-        section:    'commandes',
-        employe:    null,
-        vueKanban:  true,
-
-        commandes:         [],
-        commandesFiltrees: [],
-        menus:             [],
-        avisEnAttente:     [],
-
-        filtreCmd: { statut:'', client:'', date:'' },
-
-        modales:   { detail:false, menu:false, annulation:false },
-        cmdEnCours: null,
-
-        menuForm:    { menu_id:null, titre:'', description:'', theme:'', regime:'', nombre_personne_minimum:4, prix_par_personne:0, quantite_restante:null, conditions:'', chargement:false },
-        menuFormErr: {},
-
-        annulation:  { modeContact:'', motif:'', chargement:false, erreur:null, erreurs:{} },
-
-        horaires: {
-          liste: [],
-          chargement: false,
-          succes: false,
-        },
-
-        toast: { visible:false, message:'' },
-
-        // Statuts navigables dans flux employé
-        statutsDisponibles: [
-          { val:'en_attente',         label:'En attente' },
-          { val:'accepte',            label:'Acceptée' },
-          { val:'en_preparation',     label:'En préparation' },
-          { val:'en_cours_livraison', label:'En livraison' },
-          { val:'livre',              label:'Livrée' },
-          { val:'attente_materiel',   label:'Retour matériel' },
-          { val:'terminee',           label:'Terminée' },
-          { val:'annulee',            label:'Annulée' },
-        ],
-
-        // Définition des colonnes kanban
-        colonnesKanban: [
-          { statut:'en_attente',         label:'En attente',       bg:'#FEF9EC', color:'#92400E' },
-          { statut:'accepte',            label:'Acceptée',         bg:'#EFF6FF', color:'#1E40AF' },
-          { statut:'en_preparation',     label:'En préparation',   bg:'#FDF2F8', color:'#9D174D' },
-          { statut:'en_cours_livraison', label:'En livraison',     bg:'#F5F3FF', color:'#5B21B6' },
-          { statut:'livre',              label:'Livrée',           bg:'#F0FDF4', color:'#166534' },
-          { statut:'attente_materiel',   label:'Retour matériel',  bg:'#FFF7ED', color:'#C2410C' },
-          { statut:'terminee',           label:'Terminée',         bg:'#F0FDF4', color:'#15803D' },
-        ],
-
-        // ── Computed ──────────────────────────────────────────
-        get nbEnAttente() { return this.commandes.filter(c=>c.statut==='en_attente').length; },
-
-        commandesParStatut(statut) {
-          return this.commandesFiltrees.filter(c => c.statut === statut);
-        },
-
-        // ── Init ──────────────────────────────────────────────
-        async init() {
-          await Promise.all([
-            this.chargerEmploye(),
-            this.chargerCommandes(),
-            this.chargerMenus(),
-            this.chargerAvis(),
-            this.chargerHoraires(),
-          ]);
-        },
-
-        // ── Auth ──────────────────────────────────────────────
-        async chargerEmploye() {
-          try {
-            const res = await fetch(`${API_BASE}/auth/me`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) { window.location.href='/connexion'; return; }
-            const data = await res.json();
-            if (!['employe','administrateur'].includes(data.role)) { window.location.href='/'; return; }
-            this.employe = data;
-          } catch {
-            this.employe = { prenom:'Julie', nom:'Moreau', role:'employe' };
-          }
-        },
-
-        // ── Commandes ─────────────────────────────────────────
-        async chargerCommandes() {
-          try {
-            /*
-             * GET /api/employe/commandes
-             * Réponse : [{ numero_commande, client_prenom, client_nom,
-             *               client_email, client_gsm, menu_titre, menu_id,
-             *               date_prestation, heure_livraison, adresse_livraison,
-             *               nombre_personnes, statut,
-             *               prix_menu, prix_livraison, reduction, prix_total }]
-             */
-            const res = await fetch(`${API_BASE}/employe/commandes`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) throw new Error();
-            this.commandes = await res.json();
-          } catch {
-            this.commandes = demoCommandes();
-          }
-          this.filtrerCommandes();
-        },
-
-        filtrerCommandes() {
-          this.commandesFiltrees = this.commandes.filter(c => {
-            const q = (this.filtreCmd.client||'').toLowerCase();
-            if (q && !`${c.client_prenom} ${c.client_nom} ${c.client_email}`.toLowerCase().includes(q)) return false;
-            if (this.filtreCmd.statut && c.statut !== this.filtreCmd.statut) return false;
-            if (this.filtreCmd.date   && c.date_prestation !== this.filtreCmd.date) return false;
-            return true;
-          });
-        },
-
-        async changerStatut(cmd, nouveauStatut) {
-          try {
-            /*
-             * PUT /api/employe/commandes/:numero/statut
-             * Body : { statut }
-             * → met à jour le statut, envoie un mail au client si 'terminee' ou 'attente_materiel'
-             */
-            await fetch(`${API_BASE}/employe/commandes/${cmd.numero_commande}/statut`, {
-              method:'PUT', credentials:'include',
-              headers:{'Content-Type':'application/json','Accept':'application/json'},
-              body: JSON.stringify({ statut: nouveauStatut }),
-            });
-          } catch { /* mode démo : mise à jour locale */ }
-          cmd.statut = nouveauStatut;
-          this.filtrerCommandes();
-          this.afficherToast(`Statut → ${this.labelStatut(nouveauStatut)}`);
-        },
-
-        statutsSuivants(actuel) {
-          const flux = {
-            en_attente:         ['accepte'],
-            accepte:            ['en_preparation'],
-            en_preparation:     ['en_cours_livraison'],
-            en_cours_livraison: ['livre'],
-            livre:              ['attente_materiel','terminee'],
-            attente_materiel:   ['terminee'],
-          };
-          return (flux[actuel] || []).map(v => this.statutsDisponibles.find(s=>s.val===v)).filter(Boolean);
-        },
-
-        peutAnnuler(statut) {
-          return ['en_attente','accepte','en_preparation'].includes(statut);
-        },
-
-        ouvrirDetailCommande(cmd) {
-          this.cmdEnCours = cmd;
-          this.modales.detail = true;
-        },
-
-        ouvrirAnnulation(cmd) {
-          this.cmdEnCours = cmd;
-          this.annulation = { modeContact:'', motif:'', chargement:false, erreur:null, erreurs:{} };
-          this.modales.annulation = true;
-        },
-
-        async soumettreAnnulation() {
-          this.annulation.erreurs = {};
-          if (!this.annulation.modeContact) { this.annulation.erreurs.modeContact = 'Obligatoire.'; return; }
-          if (!this.annulation.motif.trim()) { this.annulation.erreurs.motif = 'Le motif est obligatoire.'; return; }
-          this.annulation.chargement = true;
-          try {
-            /*
-             * DELETE /api/employe/commandes/:numero
-             * Body : { modeContact, motif }
-             */
-            await fetch(`${API_BASE}/employe/commandes/${this.cmdEnCours.numero_commande}`, {
-              method:'DELETE', credentials:'include',
-              headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({ modeContact:this.annulation.modeContact, motif:this.annulation.motif }),
-            });
-          } catch {}
-          this.cmdEnCours.statut = 'annulee';
-          this.filtrerCommandes();
-          this.modales.annulation = false;
-          this.afficherToast('Commande annulée.');
-          this.annulation.chargement = false;
-        },
-
-        // ── Menus ─────────────────────────────────────────────
-        async chargerMenus() {
-          try {
-            const res = await fetch(`${API_BASE}/menus`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) throw new Error();
-            this.menus = await res.json();
-          } catch {
-            this.menus = demoMenus();
-          }
-        },
-
-        ouvrirNouveauMenu() {
-          this.menuForm = { menu_id:null, titre:'', description:'', theme:'', regime:'', nombre_personne_minimum:4, prix_par_personne:0, quantite_restante:null, conditions:'', chargement:false };
-          this.menuFormErr = {};
-          this.modales.menu = true;
-        },
-        ouvrirEditionMenu(menu) {
-          this.menuForm = { ...menu, chargement:false };
-          this.menuFormErr = {};
-          this.modales.menu = true;
-        },
-
-        async soumettreMenu() {
-          this.menuFormErr = {};
-          if (!this.menuForm.titre.trim()) { this.menuFormErr.titre = 'Le titre est obligatoire.'; return; }
-          if (!this.menuForm.theme)        { this.menuFormErr.global = 'Choisissez un thème.'; return; }
-          if (!this.menuForm.regime)       { this.menuFormErr.global = 'Choisissez un régime.'; return; }
-          this.menuForm.chargement = true;
-          try {
-            const method = this.menuForm.menu_id ? 'PUT' : 'POST';
-            const url    = this.menuForm.menu_id ? `${API_BASE}/employe/menus/${this.menuForm.menu_id}` : `${API_BASE}/employe/menus`;
-            /* PUT /api/employe/menus/:id  |  POST /api/employe/menus */
-            await fetch(url, { method, credentials:'include', headers:{'Content-Type':'application/json','Accept':'application/json'}, body:JSON.stringify(this.menuForm) });
-          } catch {}
-          if (this.menuForm.menu_id) {
-            const idx = this.menus.findIndex(m=>m.menu_id===this.menuForm.menu_id);
-            if (idx!==-1) this.menus[idx] = { ...this.menus[idx], ...this.menuForm };
-          } else {
-            this.menus.push({ menu_id:Date.now(), ...this.menuForm });
-          }
-          this.menuForm.chargement = false;
-          this.modales.menu = false;
-          this.afficherToast(this.menuForm.menu_id ? 'Menu modifié.' : 'Menu créé.');
-        },
-
-        async supprimerMenu(menu) {
-          if (!confirm(`Supprimer "${menu.titre}" ?`)) return;
-          try { await fetch(`${API_BASE}/employe/menus/${menu.menu_id}`, { method:'DELETE', credentials:'include' }); } catch {}
-          this.menus = this.menus.filter(m=>m.menu_id!==menu.menu_id);
-          this.afficherToast('Menu supprimé.');
-        },
-
-        // ── Horaires ──────────────────────────────────────────
-        async chargerHoraires() {
-          try {
-            /*
-             * GET /api/horaires
-             * Réponse : [{ horaire_id, jour, heure_ouverture, heure_fermeture, ferme }]
-             */
-            const res = await fetch(`${API_BASE}/horaires`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) throw new Error();
-            this.horaires.liste = await res.json();
-          } catch {
-            this.horaires.liste = [
-              { horaire_id:1, jour:'Lundi',    heure_ouverture:'08:00', heure_fermeture:'19:00', ferme:false },
-              { horaire_id:2, jour:'Mardi',    heure_ouverture:'08:00', heure_fermeture:'19:00', ferme:false },
-              { horaire_id:3, jour:'Mercredi', heure_ouverture:'08:00', heure_fermeture:'19:00', ferme:false },
-              { horaire_id:4, jour:'Jeudi',    heure_ouverture:'08:00', heure_fermeture:'19:00', ferme:false },
-              { horaire_id:5, jour:'Vendredi', heure_ouverture:'08:00', heure_fermeture:'20:00', ferme:false },
-              { horaire_id:6, jour:'Samedi',   heure_ouverture:'09:00', heure_fermeture:'18:00', ferme:false },
-              { horaire_id:7, jour:'Dimanche', heure_ouverture:'',      heure_fermeture:'',      ferme:true  },
-            ];
-          }
-        },
-
-        async sauvegarderHoraires() {
-          this.horaires.chargement = true;
-          this.horaires.succes = false;
-          try {
-            /*
-             * PUT /api/employe/horaires
-             * Body : [{ horaire_id, heure_ouverture, heure_fermeture, ferme }]
-             */
-            await fetch(`${API_BASE}/employe/horaires`, {
-              method:'PUT', credentials:'include',
-              headers:{'Content-Type':'application/json','Accept':'application/json'},
-              body: JSON.stringify(this.horaires.liste),
-            });
-          } catch {}
-          this.horaires.chargement = false;
-          this.horaires.succes = true;
-          this.afficherToast('Horaires enregistrés.');
-          setTimeout(()=>{ this.horaires.succes=false; }, 4000);
-        },
-
-        // ── Avis ──────────────────────────────────────────────
-        async chargerAvis() {
-          try {
-            const res = await fetch(`${API_BASE}/employe/avis?statut=en_attente`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) throw new Error();
-            this.avisEnAttente = await res.json();
-          } catch {
-            this.avisEnAttente = [
-              { avis_id:1, note:5, commentaire:'Parfait de bout en bout, livraison ultra-ponctuelle !', auteur_prenom:'Marie',  auteur_nom:'Dupont',  menu_titre:'Menu de Noël Prestige', date:'2025-01-03' },
-              { avis_id:2, note:4, commentaire:'Très bon repas, légère attente à la livraison.',        auteur_prenom:'Thomas', auteur_nom:'Bernard', menu_titre:'Brunch de Pâques',      date:'2025-04-22' },
-            ];
-          }
-        },
-
-        async validerAvis(avis) {
-          try { await fetch(`${API_BASE}/employe/avis/${avis.avis_id}/valider`, { method:'PUT', credentials:'include' }); } catch {}
-          this.avisEnAttente = this.avisEnAttente.filter(a=>a.avis_id!==avis.avis_id);
-          this.afficherToast('Avis publié sur la page d\'accueil.');
-        },
-        async refuserAvis(avis) {
-          try { await fetch(`${API_BASE}/employe/avis/${avis.avis_id}/refuser`, { method:'DELETE', credentials:'include' }); } catch {}
-          this.avisEnAttente = this.avisEnAttente.filter(a=>a.avis_id!==avis.avis_id);
-          this.afficherToast('Avis refusé.');
-        },
-
-        // ── Déconnexion ───────────────────────────────────────
-        async seDeconnecter() {
-          try { await fetch(`${API_BASE}/auth/logout`, { method:'POST', credentials:'include' }); } finally { window.location.href='/connexion'; }
-        },
-
-        // ── Helpers ───────────────────────────────────────────
-        labelStatut(s) {
-          return { en_attente:'En attente', accepte:'Acceptée', en_preparation:'En préparation', en_cours_livraison:'En livraison', livre:'Livrée', attente_materiel:'Retour matériel', terminee:'Terminée', annulee:'Annulée' }[s] || s;
-        },
-        formatPrix(v)       { return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(v||0); },
-        formatDateCourt(d)  { if(!d)return''; return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}); },
-        formatDate(d)       { if(!d)return''; return new Date(d).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); },
-        dateAujourdhui()    { return new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); },
-        afficherToast(msg)  { this.toast={visible:true,message:msg}; setTimeout(()=>{this.toast.visible=false;},3000); },
-      };
-    }
-
-    // ── Données de démo ──────────────────────────────────────
-    function demoCommandes() {
-      return [
-        { numero_commande:'VG-2025-0042', client_prenom:'Marie',  client_nom:'Dupont',  client_email:'marie@ex.fr',  client_gsm:'+33612345678', menu_titre:'Menu de Noël Prestige',        menu_id:1, date_prestation:'2025-12-24', heure_livraison:'12:00', adresse_livraison:'12 rue des Chartrons, 33000 Bordeaux', nombre_personnes:10, statut:'en_preparation',     prix_menu:378, prix_livraison:5,     reduction:0,   prix_total:383   },
-        { numero_commande:'VG-2025-0043', client_prenom:'Thomas', client_nom:'Bernard', client_email:'thomas@ex.fr', client_gsm:'+33698765432', menu_titre:'Brunch de Pâques',             menu_id:2, date_prestation:'2025-04-20', heure_livraison:'10:30', adresse_livraison:'5 allée des Mimosas, 33700 Mérignac',  nombre_personnes:6,  statut:'en_attente',          prix_menu:168, prix_livraison:10.31, reduction:0,   prix_total:178.31},
-        { numero_commande:'VG-2025-0044', client_prenom:'Sophie', client_nom:'Martin',  client_email:'sophie@ex.fr', client_gsm:'+33611223344', menu_titre:'Cocktail Dinatoire Événement', menu_id:4, date_prestation:'2026-01-15', heure_livraison:'19:00', adresse_livraison:'3 place de la Bourse, 33000 Bordeaux',  nombre_personnes:25, statut:'accepte',             prix_menu:875, prix_livraison:5,     reduction:87.5,prix_total:792.5 },
-        { numero_commande:'VG-2025-0045', client_prenom:'Lucas',  client_nom:'Petit',   client_email:'lucas@ex.fr',  client_gsm:'+33677889900', menu_titre:'Menu Végétarien Printemps',    menu_id:3, date_prestation:'2025-06-10', heure_livraison:'13:00', adresse_livraison:'8 cours du Médoc, 33300 Bordeaux',      nombre_personnes:4,  statut:'en_cours_livraison',  prix_menu:96,  prix_livraison:5,     reduction:0,   prix_total:101   },
-        { numero_commande:'VG-2025-0046', client_prenom:'Emma',   client_nom:'Leroy',   client_email:'emma@ex.fr',   client_gsm:'+33644556677', menu_titre:'Menu de Noël Prestige',        menu_id:1, date_prestation:'2025-12-31', heure_livraison:'12:30', adresse_livraison:'20 rue Sainte-Catherine, 33000 Bordeaux',nombre_personnes:8,  statut:'en_attente',          prix_menu:336, prix_livraison:5,     reduction:0,   prix_total:341   },
-        { numero_commande:'VG-2025-0047', client_prenom:'Paul',   client_nom:'Roux',    client_email:'paul@ex.fr',   client_gsm:'+33699001122', menu_titre:'Menu Vegan Terre & Saveurs',   menu_id:5, date_prestation:'2025-07-04', heure_livraison:'12:00', adresse_livraison:'15 rue du Palais Gallien, 33000 Bordeaux',nombre_personnes:6,  statut:'livre',               prix_menu:132, prix_livraison:5,     reduction:0,   prix_total:137   },
-      ];
-    }
-
-    function demoMenus() {
-      return [
-        { menu_id:1, titre:'Menu de Noël Prestige',        theme:'Noël',      regime:'classique',  nombre_personne_minimum:8,  prix_par_personne:42, quantite_restante:3,  description:'Foie gras, chapon, bûche glacée.' },
-        { menu_id:2, titre:'Brunch de Pâques',             theme:'Pâques',    regime:'classique',  nombre_personne_minimum:6,  prix_par_personne:28, quantite_restante:8,  description:'Viennoiseries, œufs cocotte, saumon.' },
-        { menu_id:3, titre:'Menu Végétarien Printemps',    theme:'classique', regime:'végétarien', nombre_personne_minimum:4,  prix_par_personne:24, quantite_restante:12, description:'Velouté d\'asperges, risotto.' },
-        { menu_id:4, titre:'Cocktail Dinatoire Événement', theme:'évènement', regime:'classique',  nombre_personne_minimum:20, prix_par_personne:35, quantite_restante:5,  description:'45 pièces / personne.' },
-        { menu_id:5, titre:'Menu Vegan Terre & Saveurs',   theme:'classique', regime:'vegan',      nombre_personne_minimum:4,  prix_par_personne:22, quantite_restante:15, description:'Gaspacho, tajine légumes, mousse chocolat.' },
-      ];
-    }
-  </script>
+  <script src="/js/commun/api.js"></script>
+  <script src="/js/commun/gestion-catalogue.js"></script>
+  <script src="/js/commun/gestion-commandes.js"></script>
+  <script src="/js/pages/employe.js"></script>
 
 </body>
 </html>

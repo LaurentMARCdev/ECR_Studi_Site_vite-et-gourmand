@@ -6,36 +6,15 @@
   <title>Administration – Vite & Gourmand</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <!-- Chart.js pour les graphiques -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            nuit:    '#1A1208',
-            creme:   '#F5F0E8',
-            rouille: '#D4521A',
-            herbe:   '#4A7C59',
-            safran:  '#F0C060',
-            admin:   '#111827',   // sidebar admin plus froide que nuit
-            adminhover: '#1F2937',
-          },
-          fontFamily: {
-            display: ['"Playfair Display"', 'serif'],
-            body:    ['Inter', 'sans-serif'],
-          },
-        }
-      }
-    }
-  </script>
+  <script src="/js/config-tailwind.js"></script>
 
   <style>
+    [x-cloak] { display:none !important; }
     html { scroll-behavior: smooth; }
     body { font-family: 'Inter', sans-serif; background: #F3F4F6; color: #1A1208; }
 
@@ -101,7 +80,7 @@
   </style>
 </head>
 
-<body x-data="adminApp()" x-init="init()" class="flex">
+<body x-data="adminApp()" class="flex">
 
   <!-- ══════════════════════════════════════
        SIDEBAR
@@ -125,7 +104,7 @@
       <button @click="section='commandes'" :class="section==='commandes'?'active':''" class="sidebar-item" :aria-current="section==='commandes'?'page':'false'">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         Commandes
-        <span x-show="nbCommandesEnAttente>0" class="ml-auto bg-rouille text-white text-xs font-bold px-1.5 py-0.5 rounded-full" x-text="nbCommandesEnAttente"></span>
+        <span x-show="nbEnAttente>0" class="ml-auto bg-rouille text-white text-xs font-bold px-1.5 py-0.5 rounded-full" x-text="nbEnAttente"></span>
       </button>
       <button @click="section='menus'" :class="section==='menus'?'active':''" class="sidebar-item" :aria-current="section==='menus'?'page':'false'">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
@@ -138,7 +117,7 @@
       <button @click="section='avis'" :class="section==='avis'?'active':''" class="sidebar-item" :aria-current="section==='avis'?'page':'false'">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
         Avis clients
-        <span x-show="nbAvisEnAttente>0" class="ml-auto bg-safran text-nuit text-xs font-bold px-1.5 py-0.5 rounded-full" x-text="nbAvisEnAttente"></span>
+        <span x-show="avisEnAttente.length>0" class="ml-auto bg-safran text-nuit text-xs font-bold px-1.5 py-0.5 rounded-full" x-text="avisEnAttente.length"></span>
       </button>
     </nav>
 
@@ -180,6 +159,11 @@
     <!-- Contenu -->
     <main class="flex-1 p-8 space-y-8" id="main-content">
 
+      <!-- Erreur de chargement / d'enregistrement de la section affichée -->
+      <div x-show="erreurSection()" x-cloak
+           class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded"
+           role="alert" x-text="erreurSection()"></div>
+
       <!-- ═══════════════════════════════
            DASHBOARD
       ════════════════════════════════ -->
@@ -189,24 +173,24 @@
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div class="kpi-card">
             <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Commandes totales</p>
-            <p class="font-display text-3xl font-black text-nuit" x-text="stats.totalCommandes"></p>
-            <span class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded kpi-delta-pos">+12% ce mois</span>
+            <p class="font-display text-3xl font-black text-nuit" x-text="nbCommandesActives"></p>
+            <span class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded kpi-delta-pos">hors annulations</span>
           </div>
           <div class="kpi-card">
             <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Chiffre d'affaires</p>
-            <p class="font-display text-3xl font-black text-nuit" x-text="formatPrix(stats.chiffreAffaires)"></p>
-            <span class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded kpi-delta-pos">+8% ce mois</span>
+            <p class="font-display text-3xl font-black text-nuit" x-text="formatPrix(totalCA)"></p>
+            <span class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded kpi-delta-pos">commandes acceptées</span>
           </div>
           <div class="kpi-card">
             <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">En attente</p>
-            <p class="font-display text-3xl font-black text-rouille" x-text="nbCommandesEnAttente"></p>
+            <p class="font-display text-3xl font-black text-rouille" x-text="nbEnAttente"></p>
             <span class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded bg-orange-50 text-orange-700">à traiter</span>
           </div>
           <div class="kpi-card">
             <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Note moyenne</p>
-            <p class="font-display text-3xl font-black text-safran" x-text="stats.noteMoyenne + '/5'"></p>
+            <p class="font-display text-3xl font-black text-safran" x-text="noteMoyenne ? noteMoyenne + '/5' : '—'"></p>
             <span class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded bg-yellow-50 text-yellow-700">
-              <span x-text="stats.totalAvis"></span> avis validés
+              <span x-text="nbAvisPublies"></span> avis publiés
             </span>
           </div>
         </div>
@@ -245,7 +229,7 @@
             <div class="flex items-start justify-between mb-4">
               <div>
                 <h2 class="font-semibold text-nuit">Chiffre d'affaires par menu</h2>
-                <p class="text-xs text-gray-400 mt-0.5">Source : base relationnelle</p>
+                <p class="text-xs text-gray-400 mt-0.5">Source : base NoSQL · agrégation par période</p>
               </div>
             </div>
 
@@ -253,7 +237,7 @@
             <div class="flex flex-wrap gap-2 mb-5">
               <div class="flex-1 min-w-[120px]">
                 <label for="ca-menu" class="text-xs text-gray-400 font-semibold uppercase tracking-wide block mb-1">Menu</label>
-                <select id="ca-menu" x-model="filtreCA.menu" @change="recalculerCA()" class="field text-xs py-2">
+                <select id="ca-menu" x-model="filtreCA.menu" class="field text-xs py-2">
                   <option value="">Tous les menus</option>
                   <template x-for="m in menusListe" :key="m.menu_id">
                     <option :value="m.menu_id" x-text="m.titre"></option>
@@ -262,11 +246,11 @@
               </div>
               <div>
                 <label for="ca-debut" class="text-xs text-gray-400 font-semibold uppercase tracking-wide block mb-1">Du</label>
-                <input id="ca-debut" type="date" x-model="filtreCA.debut" @change="recalculerCA()" class="field text-xs py-2 w-32" />
+                <input id="ca-debut" type="date" x-model="filtreCA.debut" @change="chargerChiffreAffaires()" class="field text-xs py-2 w-32" />
               </div>
               <div>
                 <label for="ca-fin" class="text-xs text-gray-400 font-semibold uppercase tracking-wide block mb-1">Au</label>
-                <input id="ca-fin" type="date" x-model="filtreCA.fin" @change="recalculerCA()" class="field text-xs py-2 w-32" />
+                <input id="ca-fin" type="date" x-model="filtreCA.fin" @change="chargerChiffreAffaires()" class="field text-xs py-2 w-32" />
               </div>
             </div>
 
@@ -288,7 +272,7 @@
 
             <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
               <span class="text-xs text-gray-400">Total affiché</span>
-              <span class="font-bold text-nuit" x-text="formatPrix(caFiltre.reduce((s,i)=>s+i.ca,0))"></span>
+              <span class="font-bold text-nuit" x-text="formatPrix(totalCA)"></span>
             </div>
           </div>
         </div>
@@ -310,7 +294,7 @@
             <label for="f-statut" class="text-xs text-gray-400 font-semibold uppercase tracking-wide block mb-1">Statut</label>
             <select id="f-statut" x-model="filtreCmd.statut" @change="filtrerCommandes()" class="field text-sm py-2 w-44">
               <option value="">Tous les statuts</option>
-              <template x-for="s in statutsCommande" :key="s.val">
+              <template x-for="s in statutsDisponibles" :key="s.val">
                 <option :value="s.val" x-text="s.label"></option>
               </template>
             </select>
@@ -324,7 +308,7 @@
               </template>
             </select>
           </div>
-          <button @click="filtreCmd={client:'',statut:'',menu:''}; filtrerCommandes()"
+          <button @click="filtreCmd={client:'',statut:'',menu:'',date:''}; filtrerCommandes()"
                   class="text-sm text-rouille font-semibold hover:underline">Réinitialiser</button>
           <p class="text-xs text-gray-400 ml-auto self-center" role="status" aria-live="polite">
             <span x-text="commandesFiltrees.length"></span> résultat(s)
@@ -382,8 +366,8 @@
                         </div>
                       </div>
                       <!-- Annuler -->
-                      <button x-show="!['terminee','annulee','en_cours_livraison','livre'].includes(cmd.statut)"
-                              @click="ouvrirAnnulationAdmin(cmd)"
+                      <button x-show="peutAnnuler(cmd.statut)"
+                              @click="ouvrirAnnulation(cmd)"
                               class="text-xs border border-red-200 text-red-500 px-3 py-1.5 rounded hover:bg-red-50 transition-colors"
                               :aria-label="'Annuler la commande ' + cmd.numero_commande">
                         Annuler
@@ -808,14 +792,14 @@
                 <div>
                   <p class="text-xs uppercase tracking-wide text-gray-500 mb-1 font-semibold" x-text="cat === 'entree' ? 'Entrées' : (cat === 'plat_principal' ? 'Plats principaux' : 'Desserts')"></p>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-2 border border-gray-200 rounded p-3">
-                    <template x-for="p in platsListe.filter(pl => pl.categorie === cat)" :key="p.plat_id">
+                    <template x-for="p in platsDeCategorie(cat)" :key="p.plat_id">
                       <label class="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="checkbox" :value="p.plat_id" x-model="menuForm.platIds"
                                class="rounded border-gray-300 text-rouille focus:ring-rouille">
                         <span x-text="p.titre"></span>
                       </label>
                     </template>
-                    <template x-if="platsListe.filter(pl => pl.categorie === cat).length === 0">
+                    <template x-if="platsDeCategorie(cat).length === 0">
                       <p class="text-xs text-gray-400 italic col-span-2">Aucun plat dans cette catégorie</p>
                     </template>
                   </div>
@@ -913,16 +897,16 @@
   <!-- ══════════════════════════════════════
        MODALE : ANNULATION COMMANDE (admin)
   ═══════════════════════════════════════ -->
-  <div x-show="modales.annulAdmin" x-transition
+  <div x-show="modales.annulation" x-transition
        class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
        role="dialog" aria-modal="true" aria-labelledby="modale-annul-admin-titre"
-       @keydown.escape.window="modales.annulAdmin=false" @click.self="modales.annulAdmin=false">
+       @keydown.escape.window="modales.annulation=false" @click.self="modales.annulation=false">
     <div class="bg-white rounded shadow-xl w-full max-w-md p-8"
          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
 
       <div class="flex justify-between items-start mb-4">
         <h2 id="modale-annul-admin-titre" class="font-display text-xl font-bold text-nuit">Annuler la commande</h2>
-        <button @click="modales.annulAdmin=false" class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-rouille rounded" aria-label="Fermer">
+        <button @click="modales.annulation=false" class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-rouille rounded" aria-label="Fermer">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
@@ -931,29 +915,30 @@
         ⚠️ Vous devez avoir contacté le client <strong>par appel GSM ou mail</strong> avant d'annuler.
       </div>
 
-      <form @submit.prevent="soumettreAnnulAdmin()" novalidate class="space-y-4">
+      <form @submit.prevent="soumettreAnnulation()" novalidate class="space-y-4">
         <div>
           <label for="aa-contact" class="block text-sm font-semibold text-nuit mb-1">Mode de contact <span class="text-rouille" aria-hidden="true">*</span></label>
-          <select id="aa-contact" x-model="annulAdmin.modeContact" class="field" required :class="annulAdmin.erreurs.modeContact?'err':''">
+          <select id="aa-contact" x-model="annulation.modeContact" class="field" required :class="annulation.erreurs.modeContact?'err':''">
             <option value="">Sélectionner…</option>
             <option value="gsm">Appel GSM</option>
             <option value="mail">E-mail</option>
           </select>
-          <p x-show="annulAdmin.erreurs.modeContact" class="text-red-600 text-xs mt-1" x-text="annulAdmin.erreurs.modeContact" role="alert"></p>
+          <p x-show="annulation.erreurs.modeContact" class="text-red-600 text-xs mt-1" x-text="annulation.erreurs.modeContact" role="alert"></p>
         </div>
         <div>
           <label for="aa-motif" class="block text-sm font-semibold text-nuit mb-1">Motif d'annulation <span class="text-rouille" aria-hidden="true">*</span></label>
-          <textarea id="aa-motif" rows="3" x-model="annulAdmin.motif" class="field resize-none" required :class="annulAdmin.erreurs.motif?'err':''"
+          <textarea id="aa-motif" rows="3" x-model="annulation.motif" class="field resize-none" required :class="annulation.erreurs.motif?'err':''"
                     placeholder="Expliquez la raison de l'annulation…"></textarea>
-          <p x-show="annulAdmin.erreurs.motif" class="text-red-600 text-xs mt-1" x-text="annulAdmin.erreurs.motif" role="alert"></p>
+          <p x-show="annulation.erreurs.motif" class="text-red-600 text-xs mt-1" x-text="annulation.erreurs.motif" role="alert"></p>
         </div>
+        <div x-show="annulation.erreurs.global" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded" role="alert" x-text="annulation.erreurs.global"></div>
         <div class="flex gap-3">
-          <button type="submit" :disabled="annulAdmin.chargement"
+          <button type="submit" :disabled="annulation.chargement"
                   class="flex-1 bg-red-600 text-white font-bold py-3 rounded hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-            <span class="spin" x-show="annulAdmin.chargement" aria-hidden="true"></span>
-            <span x-text="annulAdmin.chargement ? 'Annulation…' : 'Confirmer l\'annulation'"></span>
+            <span class="spin" x-show="annulation.chargement" aria-hidden="true"></span>
+            <span x-text="annulation.chargement ? 'Annulation…' : 'Confirmer l\'annulation'"></span>
           </button>
-          <button type="button" @click="modales.annulAdmin=false"
+          <button type="button" @click="modales.annulation=false"
                   class="px-5 border border-gray-200 text-gray-600 font-semibold py-3 rounded hover:bg-gray-50 transition-colors">Annuler</button>
         </div>
       </form>
@@ -964,599 +949,10 @@
   <div x-show="toast.visible" x-transition class="toast" role="status" aria-live="polite" x-text="toast.message"></div>
 
 
-  <!-- ══════════════════════════════════════
-       SCRIPT
-  ═══════════════════════════════════════ -->
-  <script>
-    const API_BASE = '/api';
-
-    function adminApp() {
-      return {
-        menuOpen: false,
-        section:  'dashboard',
-        admin:    null,
-
-        // Données
-        stats:            { totalCommandes:0, chiffreAffaires:0, noteMoyenne:0, totalAvis:0 },
-        commandes:        [],
-        commandesFiltrees:[],
-        menusListe:       [],
-        employes:         [],
-        avisEnAttente:    [],
-        commandesParMenu: [],
-        themesListe:      [],
-        regimesListe:     [],
-        allergenesListe:  [],
-        platsListe:       [],
-        platForm:         { plat_id:null, titre:'', description:'', categorie:'entree', imageUrl:'', allergeneIds:[], chargement:false },
-        platFormErr:      {},
-        caParMenu:        [],
-        caFiltre:         [],
-
-        // KPIs calculés
-        get nbCommandesEnAttente() { return this.commandes.filter(c=>c.statut==='en_attente').length; },
-        get nbAvisEnAttente()      { return this.avisEnAttente.length; },
-        get maxCommandes()         { return Math.max(...this.commandesParMenu.map(i=>i.count), 1); },
-        get maxCA()                { return Math.max(...this.caFiltre.map(i=>i.ca), 1); },
-
-        // Filtres
-        filtreCmd:  { client:'', statut:'', menu:'' },
-        filtreCA:   { menu:'', debut:'', fin:'' },
-
-        // Modales
-        modales: { menu:false, plat:false, employe:false, annulAdmin:false },
-        cmdEnCours: null,
-
-        // Formulaires
-        menuForm:     { menu_id:null, titre:'', description:'', theme:'', regime:'', nombre_personne_minimum:4, prix_par_personne:0, quantite_restante:null, conditions:'', chargement:false },
-        menuFormErr:  {},
-        employeForm:  { prenom:'', nom:'', email:'', motDePasse:'', chargement:false, succes:false },
-        employeFormErr:{},
-        annulAdmin:   { modeContact:'', motif:'', chargement:false, erreurs:{} },
-
-        toast: { visible:false, message:'' },
-
-        statutsCommande: [
-          { val:'en_attente',         label:'En attente' },
-          { val:'accepte',            label:'Acceptée' },
-          { val:'en_preparation',     label:'En préparation' },
-          { val:'en_cours_livraison', label:'En cours de livraison' },
-          { val:'livre',              label:'Livrée' },
-          { val:'attente_materiel',   label:'Attente retour matériel' },
-          { val:'terminee',           label:'Terminée' },
-          { val:'annulee',            label:'Annulée' },
-        ],
-
-        // ── Init ──────────────────────────────────────────────
-        async init() {
-          await Promise.all([
-            this.chargerAdmin(),
-            this.chargerCommandes(),
-            this.chargerMenus(),
-            this.chargerEmployes(),
-            this.chargerAvis(),
-            this.chargerStatsNoSQL(),
-            this.chargerReferentiels(),
-            this.chargerPlats(),
-          ]);
-        },
-
-        // ── Chargement admin ──────────────────────────────────
-        async chargerAdmin() {
-          try {
-            const res = await fetch(`${API_BASE}/auth/me`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) { window.location.href='/connexion'; return; }
-            const data = await res.json();
-            if (data.role !== 'administrateur') { window.location.href='/'; return; }
-            this.admin = data;
-          } catch {
-            this.admin = { prenom:'José', nom:'Martin', role:'administrateur' };
-          }
-        },
-
-        // ── Commandes ─────────────────────────────────────────
-        async chargerCommandes() {
-          try {
-            /*
-             * GET /api/admin/commandes
-             * Réponse : [{ numero_commande, client_prenom, client_nom, client_email,
-             *               menu_titre, menu_id, date_prestation, statut,
-             *               prix_total }]
-             */
-            const res = await fetch(`${API_BASE}/admin/commandes`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) throw new Error();
-            this.commandes = await res.json();
-          } catch {
-            this.commandes = demoCommandes();
-          }
-          this.filtrerCommandes();
-          this.stats.totalCommandes = this.commandes.length;
-          this.stats.chiffreAffaires = this.commandes.filter(c=>c.statut!=='annulee').reduce((s,c)=>s+c.prix_total,0);
-        },
-
-        filtrerCommandes() {
-          this.commandesFiltrees = this.commandes.filter(c => {
-            const recherche = (this.filtreCmd.client||'').toLowerCase();
-            if (recherche && !`${c.client_prenom} ${c.client_nom} ${c.client_email}`.toLowerCase().includes(recherche)) return false;
-            if (this.filtreCmd.statut && c.statut !== this.filtreCmd.statut) return false;
-            if (this.filtreCmd.menu   && c.menu_id != this.filtreCmd.menu)   return false;
-            return true;
-          });
-        },
-
-        // ── Menus ─────────────────────────────────────────────
-        async chargerReferentiels() {
-          try {
-            const [rTh, rRe, rAl] = await Promise.all([
-              fetch(`${API_BASE}/referentiels/themes`, { credentials:'include', headers:{'Accept':'application/json'} }),
-              fetch(`${API_BASE}/referentiels/regimes`, { credentials:'include', headers:{'Accept':'application/json'} }),
-              fetch(`${API_BASE}/referentiels/allergenes`, { credentials:'include', headers:{'Accept':'application/json'} }),
-            ]);
-            if (rTh.ok) this.themesListe     = await rTh.json();
-            if (rRe.ok) this.regimesListe    = await rRe.json();
-            if (rAl.ok) this.allergenesListe = await rAl.json();
-          } catch {}
-        },
-        async chargerPlats() {
-          try {
-            const res = await fetch(`${API_BASE}/employe/plats`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (res.ok) this.platsListe = await res.json();
-          } catch {}
-        },
-
-	// ── Plats ─────────────────────────────────────────────
-        ouvrirNouveauPlat() {
-          this.platForm = { plat_id: null, titre: '', description: '', categorie: 'entree', imageUrl: '', allergeneIds: [], chargement: false };
-          this.platFormErr = {};
-          this.modales.plat = true;
-        },
-        ouvrirEditionPlat(plat) {
-          this.platForm = {
-            plat_id: plat.plat_id,
-            titre: plat.titre || '',
-            description: plat.description || '',
-            categorie: plat.categorie || 'entree',
-            imageUrl: plat.image_url || plat.imageUrl || '',
-            allergeneIds: (plat.allergenes || []).map(function(a) { return a.allergene_id || a; }),
-            chargement: false
-          };
-          this.platFormErr = {};
-          this.modales.plat = true;
-        },
-        async soumettrePlat() {
-          this.platFormErr = {};
-          if (!this.platForm.titre.trim() || this.platForm.titre.length < 2) {
-            this.platFormErr.titre = 'Titre obligatoire (2 caractères min).';
-            return;
-          }
-          this.platForm.chargement = true;
-          try {
-            const method = this.platForm.plat_id ? 'PUT' : 'POST';
-            const url = this.platForm.plat_id
-              ? API_BASE + '/employe/plats/' + this.platForm.plat_id
-              : API_BASE + '/employe/plats';
-            const body = {
-              titre: this.platForm.titre,
-              description: this.platForm.description || null,
-              categorie: this.platForm.categorie,
-              imageUrl: this.platForm.imageUrl || null,
-              allergeneIds: this.platForm.allergeneIds
-            };
-            const res = await fetch(url, {
-              method: method,
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify(body)
-            });
-            const data = await res.json().catch(function() { return {}; });
-            if (!res.ok) {
-              let msg = data.erreur || 'Erreur lors de l\'enregistrement.';
-              if (data.details) {
-                msg += ' ' + Object.values(data.details).join(' ');
-              }
-              this.platFormErr.global = msg;
-              return;
-            }
-            await this.chargerPlats();
-            this.modales.plat = false;
-            this.afficherToast(this.platForm.plat_id ? 'Plat modifié.' : 'Plat créé.');
-          } catch (e) {
-            this.platFormErr.global = 'Erreur réseau : ' + e.message;
-          } finally {
-            this.platForm.chargement = false;
-          }
-        },
-        async supprimerPlat(plat) {
-          if (!confirm('Supprimer le plat "' + plat.titre + '" ?')) return;
-          try {
-            const res = await fetch(API_BASE + '/employe/plats/' + plat.plat_id, {
-              method: 'DELETE',
-              credentials: 'include'
-            });
-            if (res.ok) {
-              this.platsListe = this.platsListe.filter(function(p) { return p.plat_id !== plat.plat_id; });
-              this.afficherToast('Plat supprimé.');
-            } else {
-              const data = await res.json().catch(function() { return {}; });
-              alert(data.erreur || 'Impossible de supprimer.');
-            }
-          } catch (e) {
-            alert('Erreur réseau.');
-          }
-        },
-
-        async chargerMenus() {
-          try {
-            const res = await fetch(`${API_BASE}/menus`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) throw new Error();
-            this.menusListe = await res.json();
-          } catch {
-            this.menusListe = [];
-          }
-          this.recalculerCA();
-        },
-
-        async soumettreMenu() {
-          this.menuFormErr = {};
-
-          // Validation front minimale
-          if (!this.menuForm.titre || this.menuForm.titre.trim().length < 3) {
-            this.menuFormErr.titre = 'Titre obligatoire (3 caractères min).';
-            return;
-          }
-          if (!this.menuForm.description || this.menuForm.description.trim().length === 0) {
-            this.menuFormErr.global = 'La description est obligatoire.';
-            return;
-          }
-          if (!this.menuForm.themeIds || this.menuForm.themeIds.length === 0) {
-            this.menuFormErr.global = 'Sélectionnez au moins un thème.';
-            return;
-          }
-          if (!this.menuForm.regimeIds || this.menuForm.regimeIds.length === 0) {
-            this.menuFormErr.global = 'Sélectionnez au moins un régime.';
-            return;
-          }
-          if (!this.menuForm.platIds || this.menuForm.platIds.length === 0) {
-            this.menuFormErr.global = 'Sélectionnez au moins un plat.';
-            return;
-          }
-
-          this.menuForm.chargement = true;
-          try {
-            const method = this.menuForm.menu_id ? 'PUT' : 'POST';
-            const url = this.menuForm.menu_id
-              ? API_BASE + '/employe/menus/' + this.menuForm.menu_id
-              : API_BASE + '/employe/menus';
-
-            const body = {
-              titre: this.menuForm.titre,
-              description: this.menuForm.description,
-              prixParPersonne: Number(this.menuForm.prixParPersonne) || 0,
-              nombrePersonneMinimum: Number(this.menuForm.nombrePersonneMinimum) || 1,
-              quantiteRestante: (this.menuForm.quantiteRestante === '' || this.menuForm.quantiteRestante === null) ? null : Number(this.menuForm.quantiteRestante),
-              conditions: this.menuForm.conditions || null,
-              actif: this.menuForm.actif !== false,
-              themeIds: this.menuForm.themeIds.map(function(x) { return Number(x); }),
-              regimeIds: this.menuForm.regimeIds.map(function(x) { return Number(x); }),
-              platIds: this.menuForm.platIds.map(function(x) { return Number(x); }),
-              images: []
-            };
-
-            const res = await fetch(url, {
-              method: method,
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify(body)
-            });
-
-            const data = await res.json().catch(function() { return {}; });
-
-            if (!res.ok) {
-              let msg = data.erreur || 'Erreur lors de l\'enregistrement.';
-              if (data.details && typeof data.details === 'object') {
-                msg += ' ' + Object.values(data.details).join(' | ');
-              }
-              this.menuFormErr.global = msg;
-              return;
-            }
-
-            await this.chargerMenus();
-            this.modales.menu = false;
-            this.afficherToast(this.menuForm.menu_id ? 'Menu modifié.' : 'Menu créé.');
-          } catch (e) {
-            this.menuFormErr.global = 'Erreur réseau : ' + e.message;
-          } finally {
-            this.menuForm.chargement = false;
-          }
-        },
-
-        async supprimerMenu(menu) {
-          if (!confirm('Supprimer le menu "' + menu.titre + '" ?')) return;
-          try {
-            const res = await fetch(API_BASE + '/employe/menus/' + menu.menu_id, {
-              method: 'DELETE',
-              credentials: 'include'
-            });
-            if (res.ok) {
-              this.menusListe = this.menusListe.filter(function(m) { return m.menu_id !== menu.menu_id; });
-              this.afficherToast('Menu supprimé.');
-            } else {
-              const data = await res.json().catch(function() { return {}; });
-              alert(data.erreur || 'Impossible de supprimer.');
-            }
-          } catch (e) {
-            alert('Erreur réseau.');
-          }
-        },
-
-        ouvrirNouveauMenu() {
-          this.menuForm = {
-            menu_id: null,
-            titre: '',
-            description: '',
-            prixParPersonne: 0,
-            nombrePersonneMinimum: 4,
-            quantiteRestante: null,
-            conditions: '',
-            actif: true,
-            themeIds: [],
-            regimeIds: [],
-            platIds: [],
-            chargement: false
-          };
-          this.menuFormErr = {};
-          this.modales.menu = true;
-        },
-
-        ouvrirEditionMenu(menu) {
-          const themeIdsFromLibelles = (menu.themes || [])
-            .map(function(lib) {
-              const t = this.themesListe.find(function(x) { return x.libelle === lib; });
-              return t ? t.theme_id : null;
-            }.bind(this))
-            .filter(function(id) { return id !== null; });
-          const regimeIdsFromLibelles = (menu.regimes || [])
-            .map(function(lib) {
-              const r = this.regimesListe.find(function(x) { return x.libelle === lib; });
-              return r ? r.regime_id : null;
-            }.bind(this))
-            .filter(function(id) { return id !== null; });
-
-          this.menuForm = {
-            menu_id: menu.menu_id,
-            titre: menu.titre || '',
-            description: menu.description || '',
-            prixParPersonne: menu.prix_par_personne || 0,
-            nombrePersonneMinimum: menu.nombre_personne_minimum || 1,
-            quantiteRestante: menu.quantite_restante,
-            conditions: menu.conditions || '',
-            actif: menu.actif !== false,
-            themeIds: themeIdsFromLibelles,
-            regimeIds: regimeIdsFromLibelles,
-            platIds: [],
-            chargement: false
-          };
-          this.menuFormErr = {};
-          this.modales.menu = true;
-        },
-
-        // ── Employés ──────────────────────────────────────────
-        async chargerEmployes() {
-          try {
-            /*
-             * GET /api/admin/employes
-             * Réponse : [{ utilisateur_id, prenom, nom, email, actif, date_creation }]
-             */
-            const res = await fetch(`${API_BASE}/admin/employes`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) throw new Error();
-            this.employes = await res.json();
-          } catch {
-            this.employes = demoEmployes();
-          }
-        },
-
-        ouvrirNouvelEmploye() {
-          this.employeForm = { prenom:'', nom:'', email:'', motDePasse:'', chargement:false, succes:false };
-          this.employeFormErr = {};
-          this.modales.employe = true;
-        },
-
-        async soumettreEmploye() {
-          this.employeFormErr = {};
-          if (!this.employeForm.prenom.trim()) { this.employeFormErr.prenom = 'Obligatoire.'; return; }
-          if (!this.employeForm.nom.trim())    { this.employeFormErr.nom    = 'Obligatoire.'; return; }
-          if (!this.employeForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.employeForm.email)) { this.employeFormErr.email = 'E-mail invalide.'; return; }
-          if (!this.employeForm.motDePasse || this.employeForm.motDePasse.length < 10) { this.employeFormErr.motDePasse = 'Minimum 10 caractères.'; return; }
-          this.employeForm.chargement = true;
-          try {
-            /*
-             * POST /api/admin/employes
-             * Body : { prenom, nom, email, motDePasse }
-             * → crée le compte, envoie un mail de notification (sans le mdp)
-             */
-            const res = await fetch(`${API_BASE}/admin/employes`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json','Accept':'application/json'}, body:JSON.stringify({ prenom:this.employeForm.prenom, nom:this.employeForm.nom, email:this.employeForm.email, motDePasse:this.employeForm.motDePasse }) });
-            if (!res.ok) throw new Error();
-          } catch {
-            this.employes.push({ utilisateur_id:Date.now(), prenom:this.employeForm.prenom, nom:this.employeForm.nom, email:this.employeForm.email, actif:true, date_creation: new Date().toISOString() });
-          } finally {
-            this.employeForm.chargement = false;
-            this.employeForm.succes = true;
-          }
-        },
-
-        async toggleEmployeActif(emp) {
-          const action = emp.actif ? 'désactiver' : 'réactiver';
-          if (!confirm(`${action.charAt(0).toUpperCase()+action.slice(1)} le compte de ${emp.prenom} ${emp.nom} ?`)) return;
-          try {
-            /* PUT /api/admin/employes/:id/toggle-actif */
-            await fetch(`${API_BASE}/admin/employes/${emp.utilisateur_id}/toggle-actif`, { method:'PUT', credentials:'include' });
-          } catch {}
-          emp.actif = !emp.actif;
-          this.afficherToast(`Compte ${emp.actif ? 'réactivé' : 'désactivé'}.`);
-        },
-
-        // ── Avis ──────────────────────────────────────────────
-        async chargerAvis() {
-          try {
-            /*
-             * GET /api/admin/avis?statut=en_attente
-             * Réponse : [{ avis_id, note, commentaire, auteur_prenom, auteur_nom, menu_titre, date }]
-             */
-            const res = await fetch(`${API_BASE}/admin/avis?statut=en_attente`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) throw new Error();
-            this.avisEnAttente = await res.json();
-          } catch {
-            this.avisEnAttente = demoAvis();
-          }
-          this.stats.noteMoyenne = this.avisEnAttente.length ? (this.avisEnAttente.reduce((s,a)=>s+a.note,0)/this.avisEnAttente.length).toFixed(1) : '—';
-          this.stats.totalAvis = this.avisEnAttente.length;
-        },
-
-        async validerAvis(avis) {
-          try { await fetch(`${API_BASE}/admin/avis/${avis.avis_id}/valider`, { method:'PUT', credentials:'include' }); } catch {}
-          this.avisEnAttente = this.avisEnAttente.filter(a=>a.avis_id!==avis.avis_id);
-          this.afficherToast('Avis publié.');
-        },
-        async refuserAvis(avis) {
-          try { await fetch(`${API_BASE}/admin/avis/${avis.avis_id}/refuser`, { method:'DELETE', credentials:'include' }); } catch {}
-          this.avisEnAttente = this.avisEnAttente.filter(a=>a.avis_id!==avis.avis_id);
-          this.afficherToast('Avis refusé.');
-        },
-
-        // ── Stats NoSQL (commandes par menu) ──────────────────
-        async chargerStatsNoSQL() {
-          try {
-            /*
-             * GET /api/admin/stats/commandes-par-menu   (données MongoDB)
-             * Réponse : [{ menu: "Menu de Noël Prestige", count: 42 }]
-             */
-            const res = await fetch(`${API_BASE}/admin/stats/commandes-par-menu`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) throw new Error();
-            this.commandesParMenu = await res.json();
-          } catch {
-            this.commandesParMenu = demoStatsNoSQL();
-          }
-          this.caParMenu = this.commandesParMenu.map(i => ({
-            menu: i.menu,
-            ca: (demoMenus().find(m=>m.titre===i.menu)?.prix_par_personne || 30) * (demoMenus().find(m=>m.titre===i.menu)?.nombre_personne_minimum || 6) * i.count,
-          }));
-          this.caFiltre = [...this.caParMenu];
-        },
-
-        recalculerCA() {
-          /* Filtre local pour la démo ; côté prod → GET /api/admin/stats/ca avec params */
-          this.caFiltre = this.caParMenu.filter(i => {
-            if (this.filtreCA.menu) {
-              const menu = this.menusListe.find(m => m.menu_id == this.filtreCA.menu);
-              if (menu && i.menu !== menu.titre) return false;
-            }
-            return true;
-          });
-          if (!this.caFiltre.length) this.caFiltre = [...this.caParMenu];
-        },
-
-        // ── Changement de statut ──────────────────────────────
-        statutsSuivants(actuel) {
-          const flux = {
-            en_attente:         ['accepte'],
-            accepte:            ['en_preparation'],
-            en_preparation:     ['en_cours_livraison'],
-            en_cours_livraison: ['livre'],
-            livre:              ['attente_materiel','terminee'],
-            attente_materiel:   ['terminee'],
-          };
-          return (flux[actuel] || []).map(v => this.statutsCommande.find(s=>s.val===v)).filter(Boolean);
-        },
-
-        async changerStatut(cmd, nouveauStatut) {
-          try {
-            /* PUT /api/admin/commandes/:numero/statut   Body: { statut } */
-            await fetch(`${API_BASE}/admin/commandes/${cmd.numero_commande}/statut`, { method:'PUT', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ statut:nouveauStatut }) });
-          } catch {}
-          cmd.statut = nouveauStatut;
-          this.afficherToast(`Statut mis à jour : ${this.labelStatut(nouveauStatut)}.`);
-        },
-
-        // ── Annulation admin ──────────────────────────────────
-        ouvrirAnnulationAdmin(cmd) {
-          this.cmdEnCours = cmd;
-          this.annulAdmin = { modeContact:'', motif:'', chargement:false, erreurs:{} };
-          this.modales.annulAdmin = true;
-        },
-        async soumettreAnnulAdmin() {
-          this.annulAdmin.erreurs = {};
-          if (!this.annulAdmin.modeContact) { this.annulAdmin.erreurs.modeContact = 'Obligatoire.'; return; }
-          if (!this.annulAdmin.motif.trim()) { this.annulAdmin.erreurs.motif = 'Le motif est obligatoire.'; return; }
-          this.annulAdmin.chargement = true;
-          try {
-            /* DELETE /api/admin/commandes/:numero   Body: { modeContact, motif } */
-            await fetch(`${API_BASE}/admin/commandes/${this.cmdEnCours.numero_commande}`, { method:'DELETE', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ modeContact:this.annulAdmin.modeContact, motif:this.annulAdmin.motif }) });
-          } catch {}
-          this.cmdEnCours.statut = 'annulee';
-          this.modales.annulAdmin = false;
-          this.afficherToast('Commande annulée.');
-          this.annulAdmin.chargement = false;
-        },
-
-        // ── Déconnexion ───────────────────────────────────────
-        async seDeconnecter() {
-          try { await fetch(`${API_BASE}/auth/logout`, { method:'POST', credentials:'include' }); } finally { window.location.href='/connexion'; }
-        },
-
-        // ── Helpers ───────────────────────────────────────────
-        formatPrix(v) { return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(v||0); },
-        formatDate(d) { if(!d)return''; return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}); },
-        labelStatut(s) {
-          return { en_attente:'En attente', accepte:'Acceptée', en_preparation:'En préparation', en_cours_livraison:'En livraison', livre:'Livrée', attente_materiel:'Retour matériel', terminee:'Terminée', annulee:'Annulée' }[s] || s;
-        },
-        dateAujourdhui() { return new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); },
-        afficherToast(msg) { this.toast={visible:true,message:msg}; setTimeout(()=>{this.toast.visible=false;},3000); },
-      };
-    }
-
-    // ── Données de démo ──────────────────────────────────────
-    function demoCommandes() {
-      return [
-        { numero_commande:'VG-2025-0042', client_prenom:'Marie',  client_nom:'Dupont', client_email:'marie@exemple.fr',  menu_titre:'Menu de Noël Prestige',           menu_id:1, date_prestation:'2025-12-24', statut:'en_preparation',     prix_total:383 },
-        { numero_commande:'VG-2025-0043', client_prenom:'Thomas', client_nom:'Bernard',client_email:'thomas@exemple.fr', menu_titre:'Brunch de Pâques',                menu_id:2, date_prestation:'2025-04-20', statut:'en_attente',          prix_total:178 },
-        { numero_commande:'VG-2025-0044', client_prenom:'Sophie', client_nom:'Martin', client_email:'sophie@exemple.fr', menu_titre:'Cocktail Dinatoire Événement',     menu_id:4, date_prestation:'2026-01-15', statut:'en_attente',          prix_total:792 },
-        { numero_commande:'VG-2025-0045', client_prenom:'Lucas',  client_nom:'Petit',  client_email:'lucas@exemple.fr',  menu_titre:'Menu Végétarien Printemps',        menu_id:3, date_prestation:'2025-06-10', statut:'terminee',            prix_total:96  },
-        { numero_commande:'VG-2025-0046', client_prenom:'Emma',   client_nom:'Leroy',  client_email:'emma@exemple.fr',   menu_titre:'Menu de Noël Prestige',           menu_id:1, date_prestation:'2025-12-31', statut:'accepte',             prix_total:336 },
-      ];
-    }
-    function demoMenus() {
-      return [
-        { menu_id:1, titre:'Menu de Noël Prestige',         theme:'Noël',      regime:'classique',  nombre_personne_minimum:8,  prix_par_personne:42, quantite_restante:3, description:'Foie gras, chapon, bûche glacée.' },
-        { menu_id:2, titre:'Brunch de Pâques',              theme:'Pâques',    regime:'classique',  nombre_personne_minimum:6,  prix_par_personne:28, quantite_restante:8, description:'Viennoiseries, œufs cocotte, saumon.' },
-        { menu_id:3, titre:'Menu Végétarien Printemps',     theme:'classique', regime:'végétarien', nombre_personne_minimum:4,  prix_par_personne:24, quantite_restante:12,description:'Velouté d\'asperges, risotto.' },
-        { menu_id:4, titre:'Cocktail Dinatoire Événement',  theme:'évènement', regime:'classique',  nombre_personne_minimum:20, prix_par_personne:35, quantite_restante:5, description:'45 pièces / personne.' },
-        { menu_id:5, titre:'Menu Vegan Terre & Saveurs',    theme:'classique', regime:'vegan',      nombre_personne_minimum:4,  prix_par_personne:22, quantite_restante:15,description:'Gaspacho, tajine légumes, mousse chocolat.' },
-      ];
-    }
-    function demoEmployes() {
-      return [
-        { utilisateur_id:10, prenom:'Julie', nom:'Moreau', email:'julie@vitegourmand.fr', actif:true,  date_creation:'2023-03-15' },
-        { utilisateur_id:11, prenom:'Marc',  nom:'Sanchez',email:'marc@vitegourmand.fr',  actif:true,  date_creation:'2024-01-10' },
-        { utilisateur_id:12, prenom:'Nina',  nom:'Leblanc',email:'nina@vitegourmand.fr',  actif:false, date_creation:'2022-09-01' },
-      ];
-    }
-    function demoAvis() {
-      return [
-        { avis_id:1, note:5, commentaire:'Prestation parfaite, tout était délicieux et la livraison très ponctuelle.', auteur_prenom:'Marie',  auteur_nom:'Dupont',  menu_titre:'Menu de Noël Prestige', date:'2025-01-03' },
-        { avis_id:2, note:4, commentaire:'Très bon repas, légèrement en retard sur la livraison mais la qualité était au rendez-vous.',  auteur_prenom:'Thomas', auteur_nom:'Bernard', menu_titre:'Brunch de Pâques',      date:'2025-04-22' },
-        { avis_id:3, note:3, commentaire:'Correct mais manquait de saveur sur le plat principal. Le dessert était excellent en revanche.',auteur_prenom:'Sophie', auteur_nom:'Martin',  menu_titre:'Menu Végétarien',       date:'2025-06-12' },
-      ];
-    }
-    function demoStatsNoSQL() {
-      return [
-        { menu:'Menu de Noël Prestige',        count:47 },
-        { menu:'Cocktail Dinatoire Événement', count:34 },
-        { menu:'Brunch de Pâques',             count:28 },
-        { menu:'Menu Végétarien Printemps',    count:19 },
-        { menu:'Menu Vegan Terre & Saveurs',   count:11 },
-      ];
-    }
-  </script>
+  <script src="/js/commun/api.js"></script>
+  <script src="/js/commun/gestion-catalogue.js"></script>
+  <script src="/js/commun/gestion-commandes.js"></script>
+  <script src="/js/pages/admin.js"></script>
 
 </body>
 </html>
