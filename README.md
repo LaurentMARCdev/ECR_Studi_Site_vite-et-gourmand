@@ -95,7 +95,18 @@ vite-gourmand/
 │   ├── mon-espace.html         # Espace client
 │   ├── employe.html            # Interface employé
 │   ├── admin.html              # Back-office admin
+│   ├── js/
+│   │   ├── config-tailwind.js  # Thème Tailwind partagé
+│   │   ├── commun/             # api.js (appels API, formats), gestion-catalogue.js,
+│   │   │                       # gestion-commandes.js (partagés employé / admin)
+│   │   └── pages/              # Un script par page (index.js, employe.js, admin.js…)
+│   ├── media/                  # Images des menus
 │   └── .htaccess               # Routing Apache (rewrites)
+│
+├── docker/                     # Vhost Apache, php.ini, script de démarrage
+├── Dockerfile                  # Image de l'application (PHP 8.2 + Apache)
+├── docker-compose.yml          # App + PostgreSQL + MongoDB (+ mongo-express)
+├── .env.example                # Modèle du .env (le vrai .env n'est pas versionné)
 │
 ├── docs/                       # Livrables documentaires ECF
 │   ├── VG-ManuelUtilisateur.pdf       (17 pages)
@@ -122,14 +133,27 @@ Ce workflow permet de garder `main` toujours dans un état déployable, tout en 
 
 ## 🚀 Installation locale
 
-### Prérequis
+### Avec Docker (recommandé)
+
+```bash
+cp .env.example .env          # renseigner les mots de passe
+docker compose up -d --build  # app + PostgreSQL + MongoDB
+```
+
+Le site tourne sur <http://localhost:8080>, avec des données et des comptes de démonstration.
+Pour démontrer l'accès à MongoDB : `docker compose exec app php bin/console app:sync-mongo`.
+Détails, comptes et commandes utiles : [`docs/DOCKER.md`](docs/DOCKER.md).
+
+### Sans Docker
+
+#### Prérequis
 - **PHP 8.2+** avec extensions : `pdo_pgsql`, `mongodb`, `mbstring`, `intl`, `openssl`
 - **Composer 2**
 - **PostgreSQL 15+**
 - **MongoDB 6+** *(optionnel — fallback SQL disponible)*
 - **Symfony CLI** *(optionnel mais pratique)*
 
-### Étapes
+#### Étapes
 
 ```bash
 # 1. Cloner le dépôt
@@ -153,10 +177,9 @@ php bin/console doctrine:migrations:migrate --no-interaction
 # 5. Initialiser MongoDB (optionnel)
 mongosh mongodb://127.0.0.1:27017 --file migrations/mongo/004_mongo_init.js
 
-# 6. Créer le compte administrateur
-php bin/console app:create-admin \
-    --email admin@vitegourmand.fr \
-    --password 'Admin@Vite2025'
+# 6. Créer les comptes et données de démonstration
+#    (mots de passe lus dans DEMO_PASSWORD_CLIENT / _EMPLOYE / _ADMIN)
+php bin/console app:seed-demo
 
 # 7. Lancer le serveur de dev
 symfony server:start
@@ -182,13 +205,15 @@ Les identifiants administrateur sont fournis uniquement dans le document rendu s
 
 Deux stratégies documentées dans [`docs/VG-Deploiement.pdf`](docs/VG-Deploiement.pdf) :
 
-### Option A — VPS + Docker (production robuste)
-Ubuntu 22.04 · Nginx · Docker Compose · Let's Encrypt · CI/CD GitHub Actions · Backups S3-compatible.
+### Option A — Conteneurs (VPS + Docker)
+L'image et le `docker-compose.yml` du dépôt permettraient ce déploiement ailleurs (VPS, PaaS Docker) avec un `.env` de production et un reverse proxy HTTPS. Non retenu pour l'ECF : coût de l'hébergement, et l'offre gratuite d'Alwaysdata n'exécute pas Docker. Voir [`docs/DOCKER.md`](docs/DOCKER.md).
 
 ### Option B — Alwaysdata (choix retenu pour la démo ECF) ✅
 Hébergement français (Paris), gratuit, sans carte bancaire. Configuration en ~30 min via l'interface d'administration.
 
 **Site en production** : [https://vitegourmandlm.alwaysdata.net](https://vitegourmandlm.alwaysdata.net)
+
+À chaque mise en production, copier tout le dossier `front/` (HTML, `js/`, `media/`, `.htaccess`), pas seulement les fichiers `*.html`.
 
 Le déploiement utilise le fallback SQL pour se passer de MongoDB en production, tout en conservant le code MongoDB dans le dépôt pour démontrer la compétence NoSQL. Le routing Apache (`.htaccess`) gère les URLs propres (`/menus/{id}`, `/commande`) et le fallback vers Symfony pour les endpoints API.
 
