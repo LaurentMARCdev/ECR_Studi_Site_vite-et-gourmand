@@ -1,0 +1,28 @@
+# Dossiers de travail temporaires
+temp-serveur/
+temp/
+tmp/
+
+# Fichiers de l'OS Windows
+Thumbs.db
+desktop.ini
+*.lnk
+
+# Fichiers de l'OS macOS
+.DS_Store
+
+# Fichiers d'éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Fichiers de sauvegarde automatique
+*.bak
+*.backup
+*.orig
+*.html.bak-*
+
+# Logs locaux
+*.log
