@@ -487,7 +487,7 @@
               <template x-for="plat in platsListe" :key="plat.plat_id">
                 <tr class="tbl-row">
                   <td>
-                    <p class="font-semibold text-nuit text-sm" x-text="plat.titre"></p>
+                    <p class="font-semibold text-nuit text-sm" x-text="plat.nom || plat.titre"></p>
                     <p class="text-xs text-gray-400 truncate max-w-xs" x-text="plat.description"></p>
                   </td>
                   <td class="text-sm capitalize" x-text="(plat.categorie || '').replace('_', ' ')"></td>
@@ -812,7 +812,7 @@
                       <label class="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="checkbox" :value="p.plat_id" x-model="menuForm.platIds"
                                class="rounded border-gray-300 text-rouille focus:ring-rouille">
-                        <span x-text="p.titre"></span>
+                        <span x-text="p.nom || p.titre"></span>
                       </label>
                     </template>
                     <template x-if="platsListe.filter(pl => pl.categorie === cat).length === 0">
