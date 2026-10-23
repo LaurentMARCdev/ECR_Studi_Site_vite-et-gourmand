@@ -1111,18 +1111,21 @@
           this.modales.plat = true;
         },
         ouvrirEditionPlat(plat) {
+          // Note : plat.allergene_ids est maintenant disponible grâce au serializer modifié.
+          // Pas besoin de fetch supplémentaire — on utilise les données déjà présentes.
           this.platForm = {
             plat_id: plat.plat_id,
-            titre: plat.titre || '',
+            titre: plat.titre || plat.nom || '',   // fallback pour compatibilité
             description: plat.description || '',
             categorie: plat.categorie || 'entree',
-            imageUrl: plat.image_url || plat.imageUrl || '',
-            allergeneIds: (plat.allergenes || []).map(function(a) { return a.allergene_id || a; }),
+            imageUrl: plat.image_url || plat.imageUrl || plat.image || '',
+            // Lecture directe du tableau d'IDs renvoyé par le back-end
+            allergeneIds: plat.allergene_ids || [],
             chargement: false
           };
           this.platFormErr = {};
           this.modales.plat = true;
-        },
+        }, 
         async soumettrePlat() {
           this.platFormErr = {};
           if (!this.platForm.titre.trim() || this.platForm.titre.length < 2) {
@@ -1308,36 +1311,41 @@
           this.modales.menu = true;
         },
 
-        ouvrirEditionMenu(menu) {
-          const themeIdsFromLibelles = (menu.themes || [])
-            .map(function(lib) {
-              const t = this.themesListe.find(function(x) { return x.libelle === lib; });
-              return t ? t.theme_id : null;
-            }.bind(this))
-            .filter(function(id) { return id !== null; });
-          const regimeIdsFromLibelles = (menu.regimes || [])
-            .map(function(lib) {
-              const r = this.regimesListe.find(function(x) { return x.libelle === lib; });
-              return r ? r.regime_id : null;
-            }.bind(this))
-            .filter(function(id) { return id !== null; });
-
-          this.menuForm = {
-            menu_id: menu.menu_id,
-            titre: menu.titre || '',
-            description: menu.description || '',
-            prixParPersonne: menu.prix_par_personne || 0,
-            nombrePersonneMinimum: menu.nombre_personne_minimum || 1,
-            quantiteRestante: menu.quantite_restante,
-            conditions: menu.conditions || '',
-            actif: menu.actif !== false,
-            themeIds: themeIdsFromLibelles,
-            regimeIds: regimeIdsFromLibelles,
-            platIds: [],
-            chargement: false
-          };
-          this.menuFormErr = {};
-          this.modales.menu = true;
+        async ouvrirEditionMenu(menu) {
+          try {
+            // Récupérer le détail complet du menu
+            const res = await fetch(`${API_BASE}/menus/${menu.menu_id}`, {
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' }
+            });
+            
+            if (!res.ok) {
+              this.afficherToast('Impossible de charger le menu');
+              return;
+            }
+            
+            const detail = await res.json();
+            
+            this.menuForm = {
+              menu_id: detail.menu_id,
+              titre: detail.titre || '',
+              description: detail.description || '',
+              prixParPersonne: detail.prix_par_personne || 0,
+              nombrePersonneMinimum: detail.nombre_personne_minimum || 1,
+              quantiteRestante: detail.quantite_restante,
+              conditions: detail.conditions || '',
+              actif: detail.actif !== false,
+              themeIds: detail.theme_ids || [],
+              regimeIds: detail.regime_ids || [],
+              platIds: detail.plat_ids || [],
+              chargement: false
+            };
+            
+            this.menuFormErr = {};
+            this.modales.menu = true;
+          } catch (e) {
+            this.afficherToast('Erreur réseau : ' + e.message);
+          }
         },
 
         // ── Employés ──────────────────────────────────────────
