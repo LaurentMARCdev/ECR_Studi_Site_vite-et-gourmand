@@ -28,7 +28,9 @@ class AvisSerializer
             'note'          => $avis->getNote(),
             'commentaire'   => $avis->getCommentaire(),
             'auteur_prenom' => $avis->getUtilisateur()->getPrenom(),
-            'auteur_nom'    => substr($avis->getUtilisateur()->getNom(), 0, 1) . '.',
+            // mb_substr (et pas substr) pour gérer correctement les noms à initiale accentuée
+            // (É, Ç, Ö…) : substr casserait l'octet UTF-8 et afficherait un caractère invalide.
+            'auteur_nom' => mb_substr($avis->getUtilisateur()->getNom(), 0, 1) . '.',
             'menu_titre'    => $avis->getCommande()->getMenu()->getTitre(),
             'date'          => $avis->getDateCreation()->format('Y-m-d'),
         ];

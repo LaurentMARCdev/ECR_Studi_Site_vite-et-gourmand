@@ -150,7 +150,7 @@
       <div class="hidden md:block relative">
         <div class="aspect-[4/5] bg-gradient-to-br from-herbe/30 to-rouille/20 rounded-sm border border-white/10 flex items-center justify-center">
           <div class="text-center p-8">
-            <div class="text-8xl mb-4" aria-hidden="true">🍽️</div>
+            <div class="text-8xl mb-4" aria-hidden="true"><img src="media/Image 1.png"></div>
             <p class="font-display text-creme text-2xl italic">"La cuisine, c'est l'art de transformer des produits en souvenirs."</p>
             <p class="text-safran text-sm mt-4 font-medium">— Julie & José</p>
           </div>
@@ -281,7 +281,7 @@
       </div>
 
       <!-- Carousel Alpine.js -->
-      <div x-data="avisCarousel()" class="relative">
+      <div x-data="avisCarousel()" x-init="init()" class="relative">
         <!-- Grille d'avis -->
         <div class="grid md:grid-cols-3 gap-6">
           <template x-for="(avis, index) in avisVisibles" :key="index">
@@ -296,23 +296,56 @@
               </div>
 
               <!-- Commentaire -->
-              <blockquote class="text-nuit/70 leading-relaxed text-sm flex-1 mb-5" x-text="`« ${avis.commentaire} »`"></blockquote>
+              <blockquote class="text-nuit/70 leading-relaxed text-sm flex-1 mb-5"
+                          x-text="`« ${avis.commentaire} »`"></blockquote>
 
-              <!-- Auteur -->
-              <footer class="flex items-center gap-3 pt-4 border-t border-nuit/8">
-                <div class="w-9 h-9 rounded-full bg-rouille/20 flex items-center justify-center text-rouille font-bold text-sm" aria-hidden="true"
-                     x-text="avis.prenom[0]"></div>
-                <div>
-                  <p class="font-semibold text-nuit text-sm" x-text="avis.prenom + ' ' + avis.nom[0] + '.'"></p>
-                  <p class="text-nuit/40 text-xs" x-text="avis.evenement"></p>
-                </div>
-              </footer>
+              <!-- 
+                Auteur : avatar + nom + événement, alignés horizontalement.
+                Le <footer> apporte :
+                  - flex items-center : avatar à côté du texte (pas empilé)
+                  - gap-3 : espacement entre avatar et texte
+                  - pt-4 + border-t : ligne de séparation avec le commentaire
+              -->
+                <footer class="flex items-center gap-3 pt-4 border-t border-nuit/8">
+                  <!-- 
+                    Avatar : première lettre du prénom.
+                    aria-hidden car purement décoratif (le nom complet est juste à côté).
+                  -->
+                  <div class="w-9 h-9 rounded-full bg-rouille/20 flex items-center justify-center text-rouille font-bold text-sm"
+                      aria-hidden="true"
+                      x-text="avis.auteur_prenom[0]"></div>
+
+                  <div>
+                    <!-- 
+                      Nom affiché : "Marie D."
+                      Le nom est déjà réduit à l'initiale + point côté back
+                      par le serializer toArrayPublic (minimisation RGPD).
+                      Donc pas de retraitement JS nécessaire ici.
+                    -->
+                    <p class="font-semibold text-nuit text-sm"
+                      x-text="avis.auteur_prenom + ' ' + avis.auteur_nom"></p>
+
+                    <!-- 
+                      "evenement" côté template historique = titre du menu commandé.
+                      Vient de avis.commande.menu.titre via le serializer back.
+                    -->
+                    <p class="text-nuit/40 text-xs" x-text="avis.menu_titre"></p>
+                  </div>
+                </footer>
             </article>
           </template>
         </div>
+        <!-- État de chargement : affiché pendant le fetch -->
+        <div x-show="chargement" class="text-center text-nuit/40 py-12">
+          Chargement des avis...
+        </div>
 
-        <!-- Message si aucun avis -->
-        <div x-show="avisVisibles.length === 0" class="text-center text-nuit/40 py-12">
+        <!-- État vide : seulement après chargement terminé -->
+        <div x-show="!chargement && avisVisibles.length === 0" class="text-center text-nuit/40 py-12">
+          Aucun avis pour le moment. Soyez le premier à nous faire confiance !
+        </div>
+                <!-- Ne s'affiche QUE si le chargement est terminé ET qu'il n'y a aucun avis -->
+        <div x-show="!chargement && avisVisibles.length === 0" class="text-center text-nuit/40 py-12">
           Aucun avis pour le moment. Soyez le premier à nous faire confiance !
         </div>
       </div>
@@ -437,30 +470,36 @@
     // Données avis clients (simulées — viendront de la BDD côté back-end)
     function avisCarousel() {
       return {
-        // Seuls les avis avec statut "validé" sont affichés
-        avisVisibles: [
-          {
-            note: 5,
-            commentaire: "Prestation exceptionnelle pour notre réveillon de Noël. Les plats étaient savoureux et la livraison parfaitement ponctuelle. Nous recommandons sans hésiter.",
-            prenom: "Marie",
-            nom: "Dupont",
-            evenement: "Réveillon de Noël"
-          },
-          {
-            note: 5,
-            commentaire: "Menu de Pâques magnifique, généreux et plein de saveurs. Julie et José ont su s'adapter à nos contraintes alimentaires avec beaucoup de professionnalisme.",
-            prenom: "Thomas",
-            nom: "Bernard",
-            evenement: "Repas de Pâques"
-          },
-          {
-            note: 4,
-            commentaire: "Très bon rapport qualité-prix pour notre séminaire d'entreprise. Le menu végétarien était particulièrement réussi. Nous ferons à nouveau appel à eux.",
-            prenom: "Sophie",
-            nom: "Martin",
-            evenement: "Séminaire d'entreprise"
+        // Démarre vide, se remplit au chargement via l'API
+        avisVisibles: [],
+        chargement: true,
+        erreur: null,
+
+        init() {
+          this.chargerAvis();
+        },
+
+        async chargerAvis() {
+          try {
+            /*
+            * GET /api/avis/publics
+            * Renvoie les avis validés par la modération,
+            * triés du plus récent au plus ancien, limités à 10.
+            */
+            const res = await fetch('/api/avis', {
+              headers: { 'Accept': 'application/json' },
+            });
+            if (!res.ok) throw new Error('Impossible de charger les avis');
+            this.avisVisibles = await res.json();
+          } catch (e) {
+            // On n'invente pas de faux avis en cas d'erreur :
+            // on laisse la liste vide, le message "Aucun avis" s'affichera.
+            this.erreur = e.message;
+            this.avisVisibles = [];
+          } finally {
+            this.chargement = false;
           }
-        ]
+        },
       }
     }
   </script>
