@@ -73,6 +73,9 @@ class MenuSerializer
                 fn($img) => $img->getUrl(),
                 $menu->getImages()->toArray()
             ),
+            'theme_ids'   => array_map(fn($t) => $t->getThemeId(), $menu->getThemes()->toArray()),
+            'regime_ids'  => array_map(fn($r) => $r->getRegimeId(), $menu->getRegimes()->toArray()),
+            'plat_ids'    => array_map(fn($p) => $p->getPlatId(), $menu->getPlats()->toArray()),
             'allergenes_globaux'      => $this->collecterAllergenesUniques($menu),
             'plats'                   => [
                 'entrees'          => array_map([$this, 'platToArray'], $platsGroupes['entrees']),
@@ -90,10 +93,12 @@ class MenuSerializer
         return [
             'plat_id'     => $plat->getPlatId(),
             'nom'         => $plat->getTitre(),
+            'titre'         => $plat->getTitre(),  // en plus de 'nom'
             'description' => $plat->getDescription(),
             'categorie'   => $plat->getCategorie(),
             'image'       => $plat->getImageUrl(),
             'allergenes'  => array_map(fn($a) => $a->getLibelle(), $plat->getAllergenes()->toArray()),
+            'allergene_ids' => array_map(fn($a) => $a->getAllergeneId(), $plat->getAllergenes()->toArray()),
         ];
     }
 
