@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════════════════
+# Exclusion de fichiers de l'image Docker
+# ───────────────────────────────────────────────────────────────────
+# Allège l'image et évite d'y inclure accidentellement des secrets.
+# ═══════════════════════════════════════════════════════════════════
+
+# Dossiers VCS
+.git
+.gitignore
+.gitattributes
+
+# Fichiers d'env locaux (contiennent des secrets)
+.env
+.env.local
+.env.*.local
+api/.env.local
+api/.env.*.local
+
+# Dépendances déjà installées par Composer dans l'image
+api/vendor
+api/node_modules
+
+# Caches Symfony
+api/var/cache
+api/var/log
+
+# Documentation et fichiers de dev (pas nécessaires au runtime)
+docs/
+README.md
+*.md
+tests/
+phpunit.xml
+
+# Fichiers OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

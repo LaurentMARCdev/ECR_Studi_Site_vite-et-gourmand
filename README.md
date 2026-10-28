@@ -104,6 +104,15 @@ vite-gourmand/
 │   ├── VG-GestionDeProjet.pdf         (17 pages)
 │   └── VG-Deploiement.pdf             (24 pages)
 │
+├── docker/                    # Fichiers Docker
+│   ├── apache/vhost.conf      # Configuration vhost Apache
+│   ├── entrypoint.sh          # Script d'entrée du conteneur app
+│   └── php/                   # (réservé pour future config PHP custom)
+├── Dockerfile                 # Image PHP 8.2 + Apache
+├── docker-compose.yml         # Orchestration 3 services
+├── .env.example               # Template des variables d'env
+├── .dockerignore              # Exclusion fichiers de l'image
+│
 └── README.md                   # Ce fichier
 ```
 
@@ -177,6 +186,21 @@ Ces comptes sont disponibles sur la démo en ligne :
 Les identifiants administrateur sont fournis uniquement dans le document rendu sur Studi, pour des raisons de sécurité.
 
 ---
+## 🐳 Installation avec Docker
+
+Pour lancer la stack complète (Symfony API + PostgreSQL + MongoDB)
+en une commande :
+
+```bash
+cp .env.example .env  # Remplir les mots de passe et APP_SECRET
+docker compose up -d --build
+```
+
+L'application est accessible sur http://localhost:8080.
+
+Pour la configuration détaillée, les commandes de maintenance et le
+scénario de démonstration MongoDB, voir [docs/DOCKER.md](docs/DOCKER.md).
+---
 
 ## 🌐 Déploiement en production
 
@@ -194,7 +218,7 @@ Le déploiement utilise le fallback SQL pour se passer de MongoDB en production,
 
 ---
 
-## 📚 Livrables documentaires ECF
+## 📚 Livrables documentaires ECF (plus à jour)
 
 Les cinq documents PDF de l'ECF sont disponibles dans le dossier [`docs/`](docs/) :
 

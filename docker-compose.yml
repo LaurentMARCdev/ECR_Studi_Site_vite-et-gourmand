@@ -1,0 +1,135 @@
+# ═══════════════════════════════════════════════════════════════════
+# Orchestration des services Vite & Gourmand
+# ───────────────────────────────────────────────────────────────────
+# 3 services obligatoires + 1 outil optionnel :
+#   - app      : Symfony API + front statique derrière Apache
+#   - postgres : base de données relationnelle principale
+#   - mongo    : base NoSQL pour les statistiques admin
+#   - mongo-express (profile 'outils') : UI web pour inspecter MongoDB
+# ═══════════════════════════════════════════════════════════════════
+
+services:
+  # ─────────────────────────────────────────────────────────────────
+  # Service applicatif : PHP 8.2 + Apache
+  # ─────────────────────────────────────────────────────────────────
+  app:
+    build: .
+    container_name: vitegourmand_app
+    ports:
+      - "8080:80"
+    depends_on:
+      # Démarre app UNIQUEMENT quand postgres et mongo sont "healthy"
+      # (health check OK). Évite les erreurs au premier boot.
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    environment:
+      # Variables lues par Symfony via $_SERVER grâce à PassEnv dans vhost.conf
+      APP_ENV: ${APP_ENV:-dev}
+      APP_SECRET: ${APP_SECRET:?APP_SECRET doit être défini dans .env}
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?serverVersion=16&charset=utf8"
+      MONGODB_URL: "mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/?authSource=admin"
+      MONGODB_DB: ${MONGODB_DB:-vitegourmand_stats}
+      MAILER_DSN: ${MAILER_DSN:-null://null}
+      MAILER_FROM_ADDRESS: ${MAILER_FROM_ADDRESS:-noreply@example.com}
+      MAILER_FROM_NAME: ${MAILER_FROM_NAME:-Vite & Gourmand}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      SEED_DEMO: ${SEED_DEMO:-0}
+      # Hôte PostgreSQL utilisé par pg_isready dans entrypoint.sh
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+    volumes:
+      # En dev, synchronise les sources locales avec le conteneur
+      # pour voir les modifications sans rebuild. Commenter en prod.
+      - ./api:/var/www/api
+      - ./front:/var/www/front
+      # Volume nommé pour vendor/ : évite que le volume ./api
+      # n'écrase le vendor/ installé dans l'image.
+      - vendor_data:/var/www/api/vendor
+    networks:
+      - vitegourmand_net
+
+  # ─────────────────────────────────────────────────────────────────
+  # PostgreSQL 16 — base relationnelle principale
+  # ─────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: vitegourmand_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER doit être défini}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD doit être défini}
+      POSTGRES_DB: ${POSTGRES_DB:-vitegourmand}
+    volumes:
+      # Volume nommé pour persistance : les données survivent à un
+      # docker compose down (mais pas à `docker compose down -v`)
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Teste si PostgreSQL accepte les connexions
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - vitegourmand_net
+
+  # ─────────────────────────────────────────────────────────────────
+  # MongoDB 7 — base NoSQL pour les statistiques
+  # ─────────────────────────────────────────────────────────────────
+  # Seulement si on arrive à mettre mongoDB en production (pour l'instant en place théoriquement mais pas testé)
+  mongo:
+    image: mongo:7
+    container_name: vitegourmand_mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER requis}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD requis}
+    volumes:
+      # Persistance des données MongoDB
+      - mongodata:/data/db
+      # Script d'init exécuté au PREMIER démarrage uniquement :
+      # crée la collection initiale si fourni dans api/migrations/mongo/
+      - ./api/migrations/mongo/004_mongo_init.js:/docker-entrypoint-initdb.d/004_mongo_init.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - vitegourmand_net
+
+  # ─────────────────────────────────────────────────────────────────
+  # OPTIONNEL : UI web pour inspecter MongoDB 
+  # ─────────────────────────────────────────────────────────────────
+  # Activé uniquement avec : docker compose --profile outils up
+  mongo-express:
+    image: mongo-express:latest
+    container_name: vitegourmand_mongo_express
+    profiles:
+      - outils
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: "mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/"
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - vitegourmand_net
+
+# ═══════════════════════════════════════════════════════════════════
+# Volumes nommés — persistent entre `docker compose down` et `up`
+# ═══════════════════════════════════════════════════════════════════
+volumes:
+  pgdata:
+  mongodata:
+  vendor_data:
+
+# ═══════════════════════════════════════════════════════════════════
+# Réseau dédié — isole les conteneurs du reste
+# ═══════════════════════════════════════════════════════════════════
+networks:
+  vitegourmand_net:
+    driver: bridge
