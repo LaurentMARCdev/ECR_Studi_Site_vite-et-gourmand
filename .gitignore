@@ -26,3 +26,5 @@ desktop.ini
 
 # Logs locaux
 *.log
+# Notes de travail personnelles
+NOTES-*.md

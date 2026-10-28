@@ -84,7 +84,7 @@ when@test:
         password_hashers:
             # Pour accélérer les tests
             Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
-                algorithm: auto
-                cost:      4
-                time_cost: 3
-                memory_cost: 10
+            # On force Argon2id plutôt que 'auto', pour être sûr de l'algorithme utilisé
+                algorithm: argon2id    
+                time_cost: 4
+                memory_cost: 65536

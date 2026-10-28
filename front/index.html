@@ -150,7 +150,7 @@
       <div class="hidden md:block relative">
         <div class="aspect-[4/5] bg-gradient-to-br from-herbe/30 to-rouille/20 rounded-sm border border-white/10 flex items-center justify-center">
           <div class="text-center p-8">
-            <div class="text-8xl mb-4" aria-hidden="true"><img src="media/Image 1.png"></div>
+            <div class="text-8xl mb-4" aria-hidden="true">🍽️</div>
             <p class="font-display text-creme text-2xl italic">"La cuisine, c'est l'art de transformer des produits en souvenirs."</p>
             <p class="text-safran text-sm mt-4 font-medium">— Julie & José</p>
           </div>
@@ -281,11 +281,11 @@
       </div>
 
       <!-- Carousel Alpine.js -->
-      <div x-data="avisCarousel()" x-init="init()" class="relative">
+      <div x-data="avisCarousel()" class="relative">
         <!-- Grille d'avis -->
         <div class="grid md:grid-cols-3 gap-6">
           <template x-for="(avis, index) in avisVisibles" :key="index">
-            <article class="reveal bg-white rounded-sm p-7 shadow-sm border border-nuit/5 flex flex-col">
+            <article class="bg-white rounded-sm p-7 shadow-sm border border-nuit/5 flex flex-col">
               <!-- Étoiles -->
               <div class="flex gap-1 mb-4" :aria-label="`Note : ${avis.note} sur 5`">
                 <template x-for="i in 5" :key="i">
@@ -340,10 +340,6 @@
           Chargement des avis...
         </div>
 
-        <!-- État vide : seulement après chargement terminé -->
-        <div x-show="!chargement && avisVisibles.length === 0" class="text-center text-nuit/40 py-12">
-          Aucun avis pour le moment. Soyez le premier à nous faire confiance !
-        </div>
                 <!-- Ne s'affiche QUE si le chargement est terminé ET qu'il n'y a aucun avis -->
         <div x-show="!chargement && avisVisibles.length === 0" class="text-center text-nuit/40 py-12">
           Aucun avis pour le moment. Soyez le premier à nous faire confiance !

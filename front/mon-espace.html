@@ -519,181 +519,185 @@
   <!-- ══════════════════════════════════════
        MODALE : MODIFICATION COMMANDE
   ═══════════════════════════════════════ -->
-  <div x-show="modales.modification" x-transition
-       class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
-       role="dialog" aria-modal="true" aria-labelledby="modale-modif-titre"
-       @keydown.escape.window="modales.modification=false" @click.self="modales.modification=false">
-    <div class="bg-white rounded-sm shadow-xl w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto"
-         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
+  <template x-if="modales.modification">
+    <div x-transition
+        class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
+        role="dialog" aria-modal="true" aria-labelledby="modale-modif-titre"
+        @keydown.escape.window="modales.modification=false" @click.self="modales.modification=false">
+      <div class="bg-white rounded-sm shadow-xl w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto"
+          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
 
-      <div class="flex justify-between items-start mb-5">
-        <h2 id="modale-modif-titre" class="font-display text-xl font-bold text-nuit">Modifier la commande</h2>
-        <button @click="modales.modification=false" class="text-nuit/40 hover:text-nuit transition-colors focus:outline-none focus:ring-2 focus:ring-rouille rounded" aria-label="Fermer">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-
-      <p class="text-sm text-nuit/50 mb-5">Modifiez les informations de votre commande. Le menu choisi ne peut pas être changé.</p>
-
-      <form @submit.prevent="soumettreModification()" novalidate class="space-y-4">
-        <div>
-          <label for="m-adresse" class="block text-sm font-semibold text-nuit mb-1.5">Adresse de livraison</label>
-          <input id="m-adresse" type="text" x-model="cmdEnCours.adresse_livraison" class="field" required />
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label for="m-date" class="block text-sm font-semibold text-nuit mb-1.5">Date de prestation</label>
-            <input id="m-date" type="date" x-model="cmdEnCours.date_prestation" class="field" required />
-          </div>
-          <div>
-            <label for="m-heure" class="block text-sm font-semibold text-nuit mb-1.5">Heure souhaitée</label>
-            <input id="m-heure" type="time" x-model="cmdEnCours.heure_livraison" class="field" required />
-          </div>
-        </div>
-        <div>
-          <label for="m-personnes" class="block text-sm font-semibold text-nuit mb-1.5">Nombre de personnes</label>
-          <input id="m-personnes" type="number" :min="cmdEnCours.nombre_personnes_minimum || 1"
-                 x-model.number="cmdEnCours.nombre_personnes" class="field" required />
-          <p class="text-xs text-nuit/40 mt-1">Minimum : <span x-text="cmdEnCours.nombre_personnes_minimum"></span> personnes</p>
-        </div>
-        <div class="flex gap-3 pt-3">
-          <button type="submit" :disabled="modification.chargement"
-                  class="flex-1 bg-nuit text-creme font-semibold py-3 rounded-sm hover:bg-nuit/80 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-            <span class="spinner" x-show="modification.chargement" aria-hidden="true"></span>
-            <span x-text="modification.chargement ? 'Enregistrement…' : 'Enregistrer'"></span>
-          </button>
-          <button type="button" @click="modales.modification=false"
-                  class="flex-1 border border-nuit/20 text-nuit font-semibold py-3 rounded-sm hover:bg-creme transition-colors">
-            Annuler
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-
-  <!-- ══════════════════════════════════════
-       MODALE : ANNULATION COMMANDE
-  ═══════════════════════════════════════ -->
-  <div x-show="modales.annulation" x-transition
-       class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
-       role="dialog" aria-modal="true" aria-labelledby="modale-annul-titre"
-       @keydown.escape.window="modales.annulation=false" @click.self="modales.annulation=false">
-    <div class="bg-white rounded-sm shadow-xl w-full max-w-md p-8"
-         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
-
-      <div class="flex justify-between items-start mb-5">
-        <h2 id="modale-annul-titre" class="font-display text-xl font-bold text-nuit">Annuler la commande</h2>
-        <button @click="modales.annulation=false" class="text-nuit/40 hover:text-nuit transition-colors focus:outline-none focus:ring-2 focus:ring-rouille rounded" aria-label="Fermer">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-
-      <div class="bg-red-50 border border-red-200 rounded-sm p-4 mb-5">
-        <p class="text-red-700 text-sm font-medium">⚠️ Cette action est irréversible.</p>
-        <p class="text-red-600 text-sm mt-1">La commande <strong x-text="'n°' + cmdEnCours?.numero_commande"></strong> sera définitivement annulée.</p>
-      </div>
-
-      <div x-show="annulation.erreur" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-sm mb-4"
-           role="alert" x-text="annulation.erreur"></div>
-
-      <div class="flex gap-3">
-        <button @click="soumettreAnnulation()" :disabled="annulation.chargement"
-                class="flex-1 bg-red-600 text-white font-semibold py-3 rounded-sm hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-          <span class="spinner" x-show="annulation.chargement" aria-hidden="true"></span>
-          <span x-text="annulation.chargement ? 'Annulation…' : 'Confirmer l\'annulation'"></span>
-        </button>
-        <button @click="modales.annulation=false"
-                class="flex-1 border border-nuit/20 text-nuit font-semibold py-3 rounded-sm hover:bg-creme transition-colors">
-          Garder la commande
-        </button>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ══════════════════════════════════════
-       MODALE : DONNER UN AVIS
-  ═══════════════════════════════════════ -->
-  <div x-show="modales.avis" x-transition
-       class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
-       role="dialog" aria-modal="true" aria-labelledby="modale-avis-titre"
-       @keydown.escape.window="modales.avis=false" @click.self="modales.avis=false">
-    <div class="bg-white rounded-sm shadow-xl w-full max-w-md p-8"
-         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
-
-      <!-- Succès avis -->
-      <div x-show="avis.succes" class="text-center py-6" role="status">
-        <p class="text-4xl mb-3" aria-hidden="true">⭐</p>
-        <h2 class="font-display text-xl font-bold text-nuit mb-2">Merci pour votre avis !</h2>
-        <p class="text-nuit/60 text-sm mb-5">Il sera examiné par notre équipe avant publication.</p>
-        <button @click="modales.avis=false; avis.succes=false"
-                class="bg-rouille text-white font-semibold px-6 py-2.5 rounded-sm hover:bg-rouille/80 transition-colors">
-          Fermer
-        </button>
-      </div>
-
-      <div x-show="!avis.succes">
         <div class="flex justify-between items-start mb-5">
-          <h2 id="modale-avis-titre" class="font-display text-xl font-bold text-nuit">Votre avis</h2>
-          <button @click="modales.avis=false" class="text-nuit/40 hover:text-nuit transition-colors focus:outline-none focus:ring-2 focus:ring-rouille rounded" aria-label="Fermer">
+          <h2 id="modale-modif-titre" class="font-display text-xl font-bold text-nuit">Modifier la commande</h2>
+          <button @click="modales.modification=false" class="text-nuit/40 hover:text-nuit transition-colors focus:outline-none focus:ring-2 focus:ring-rouille rounded" aria-label="Fermer">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
 
-        <p class="text-sm text-nuit/60 mb-5">Commande <strong x-text="'n°' + cmdEnCours?.numero_commande"></strong> — <span x-text="cmdEnCours?.menu_titre"></span></p>
+        <p class="text-sm text-nuit/50 mb-5">Modifiez les informations de votre commande. Le menu choisi ne peut pas être changé.</p>
 
-        <form @submit.prevent="soumettreAvis()" novalidate class="space-y-5">
-
-          <!-- Étoiles -->
+        <form @submit.prevent="soumettreModification()" novalidate class="space-y-4">
           <div>
-            <p class="text-sm font-semibold text-nuit mb-2" id="note-label">
-              Note <span class="text-rouille" aria-hidden="true">*</span>
-            </p>
-            <div class="flex gap-2" role="group" aria-labelledby="note-label">
-              <template x-for="i in 5" :key="i">
-                <button type="button"
-                        @click="avis.note = i"
-                        @keydown.arrow-right.prevent="avis.note = Math.min(5, avis.note+1)"
-                        @keydown.arrow-left.prevent="avis.note = Math.max(1, avis.note-1)"
-                        class="star-btn text-3xl focus:outline-none focus:ring-2 focus:ring-safran rounded"
-                        :class="i <= avis.note ? 'star-on' : 'star-off'"
-                        :aria-label="`${i} étoile${i > 1 ? 's' : ''}`"
-                        :aria-pressed="(i === avis.note).toString()">★</button>
-              </template>
-            </div>
-            <p x-show="avis.erreurs.note" class="text-red-600 text-xs mt-1" x-text="avis.erreurs.note" role="alert"></p>
+            <label for="m-adresse" class="block text-sm font-semibold text-nuit mb-1.5">Adresse de livraison</label>
+            <input id="m-adresse" type="text" x-model="cmdEnCours.adresse_livraison" class="field" required />
           </div>
-
-          <!-- Commentaire -->
-          <div>
-            <label for="avis-commentaire" class="block text-sm font-semibold text-nuit mb-1.5">
-              Commentaire <span class="text-rouille" aria-hidden="true">*</span>
-            </label>
-            <textarea id="avis-commentaire" rows="4"
-                      x-model="avis.commentaire"
-                      :class="avis.erreurs.commentaire ? 'error' : ''"
-                      class="field resize-none"
-                      placeholder="Partagez votre expérience…"
-                      required maxlength="500"
-                      aria-describedby="avis-commentaire-err avis-compteur"
-                      :aria-invalid="!!avis.erreurs.commentaire"></textarea>
-            <div class="flex justify-between mt-1">
-              <p id="avis-commentaire-err" x-show="avis.erreurs.commentaire" class="text-red-600 text-xs" x-text="avis.erreurs.commentaire" role="alert"></p>
-              <p id="avis-compteur" class="text-xs text-nuit/30 ml-auto" x-text="avis.commentaire.length + '/500'"></p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="m-date" class="block text-sm font-semibold text-nuit mb-1.5">Date de prestation</label>
+              <input id="m-date" type="date" x-model="cmdEnCours.date_prestation" class="field" required />
+            </div>
+            <div>
+              <label for="m-heure" class="block text-sm font-semibold text-nuit mb-1.5">Heure souhaitée</label>
+              <input id="m-heure" type="time" x-model="cmdEnCours.heure_livraison" class="field" required />
             </div>
           </div>
-
-          <div x-show="avis.erreur" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-sm" role="alert" x-text="avis.erreur"></div>
-
-          <button type="submit" :disabled="avis.chargement"
-                  class="w-full bg-rouille text-white font-bold py-3.5 rounded-sm hover:bg-rouille/80 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-rouille focus:ring-offset-2">
-            <span class="spinner" x-show="avis.chargement" aria-hidden="true"></span>
-            <span x-text="avis.chargement ? 'Envoi…' : 'Envoyer mon avis'"></span>
-          </button>
+          <div>
+            <label for="m-personnes" class="block text-sm font-semibold text-nuit mb-1.5">Nombre de personnes</label>
+            <input id="m-personnes" type="number" :min="cmdEnCours.nombre_personnes_minimum || 1"
+                  x-model.number="cmdEnCours.nombre_personnes" class="field" required />
+            <p class="text-xs text-nuit/40 mt-1">Minimum : <span x-text="cmdEnCours.nombre_personnes_minimum"></span> personnes</p>
+          </div>
+          <div class="flex gap-3 pt-3">
+            <button type="submit" :disabled="modification.chargement"
+                    class="flex-1 bg-nuit text-creme font-semibold py-3 rounded-sm hover:bg-nuit/80 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+              <span class="spinner" x-show="modification.chargement" aria-hidden="true"></span>
+              <span x-text="modification.chargement ? 'Enregistrement…' : 'Enregistrer'"></span>
+            </button>
+            <button type="button" @click="modales.modification=false"
+                    class="flex-1 border border-nuit/20 text-nuit font-semibold py-3 rounded-sm hover:bg-creme transition-colors">
+              Annuler
+            </button>
+          </div>
         </form>
       </div>
     </div>
+  </template>
+
+  <!-- ══════════════════════════════════════
+       MODALE : ANNULATION COMMANDE
+  ═══════════════════════════════════════ -->
+  <template x-if="modales.modification">
+    <div x-transition
+        class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
+        role="dialog" aria-modal="true" aria-labelledby="modale-annul-titre"
+        @keydown.escape.window="modales.annulation=false" @click.self="modales.annulation=false">
+      <div class="bg-white rounded-sm shadow-xl w-full max-w-md p-8"
+          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
+
+        <div class="flex justify-between items-start mb-5">
+          <h2 id="modale-annul-titre" class="font-display text-xl font-bold text-nuit">Annuler la commande</h2>
+          <button @click="modales.annulation=false" class="text-nuit/40 hover:text-nuit transition-colors focus:outline-none focus:ring-2 focus:ring-rouille rounded" aria-label="Fermer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="bg-red-50 border border-red-200 rounded-sm p-4 mb-5">
+          <p class="text-red-700 text-sm font-medium">⚠️ Cette action est irréversible.</p>
+          <p class="text-red-600 text-sm mt-1">La commande <strong x-text="'n°' + cmdEnCours?.numero_commande"></strong> sera définitivement annulée.</p>
+        </div>
+
+        <div x-show="annulation.erreur" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-sm mb-4"
+            role="alert" x-text="annulation.erreur"></div>
+
+        <div class="flex gap-3">
+          <button @click="soumettreAnnulation()" :disabled="annulation.chargement"
+                  class="flex-1 bg-red-600 text-white font-semibold py-3 rounded-sm hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+            <span class="spinner" x-show="annulation.chargement" aria-hidden="true"></span>
+            <span x-text="annulation.chargement ? 'Annulation…' : 'Confirmer l\'annulation'"></span>
+          </button>
+          <button @click="modales.annulation=false"
+                  class="flex-1 border border-nuit/20 text-nuit font-semibold py-3 rounded-sm hover:bg-creme transition-colors">
+            Garder la commande
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ══════════════════════════════════════
+       MODALE : DONNER UN AVIS
+  ═══════════════════════════════════════ -->
+  <template x-if="modales.avis">
+    <div x-transition
+        class="fixed inset-0 z-50 flex items-center justify-center px-4 modale-bg"
+        role="dialog" aria-modal="true" aria-labelledby="modale-avis-titre"
+        @keydown.escape.window="modales.avis=false" @click.self="modales.avis=false">
+      <div class="bg-white rounded-sm shadow-xl w-full max-w-md p-8"
+          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
+
+        <!-- Succès avis -->
+        <div x-show="avis.succes" class="text-center py-6" role="status">
+          <p class="text-4xl mb-3" aria-hidden="true">⭐</p>
+          <h2 class="font-display text-xl font-bold text-nuit mb-2">Merci pour votre avis !</h2>
+          <p class="text-nuit/60 text-sm mb-5">Il sera examiné par notre équipe avant publication.</p>
+          <button @click="modales.avis=false; avis.succes=false"
+                  class="bg-rouille text-white font-semibold px-6 py-2.5 rounded-sm hover:bg-rouille/80 transition-colors">
+            Fermer
+          </button>
+        </div>
+
+        <div x-show="!avis.succes">
+          <div class="flex justify-between items-start mb-5">
+            <h2 id="modale-avis-titre" class="font-display text-xl font-bold text-nuit">Votre avis</h2>
+            <button @click="modales.avis=false" class="text-nuit/40 hover:text-nuit transition-colors focus:outline-none focus:ring-2 focus:ring-rouille rounded" aria-label="Fermer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <p class="text-sm text-nuit/60 mb-5">Commande <strong x-text="'n°' + cmdEnCours?.numero_commande"></strong> — <span x-text="cmdEnCours?.menu_titre"></span></p>
+
+          <form @submit.prevent="soumettreAvis()" novalidate class="space-y-5">
+
+            <!-- Étoiles -->
+            <div>
+              <p class="text-sm font-semibold text-nuit mb-2" id="note-label">
+                Note <span class="text-rouille" aria-hidden="true">*</span>
+              </p>
+              <div class="flex gap-2" role="group" aria-labelledby="note-label">
+                <template x-for="i in 5" :key="i">
+                  <button type="button"
+                          @click="avis.note = i"
+                          @keydown.arrow-right.prevent="avis.note = Math.min(5, avis.note+1)"
+                          @keydown.arrow-left.prevent="avis.note = Math.max(1, avis.note-1)"
+                          class="star-btn text-3xl focus:outline-none focus:ring-2 focus:ring-safran rounded"
+                          :class="i <= avis.note ? 'star-on' : 'star-off'"
+                          :aria-label="`${i} étoile${i > 1 ? 's' : ''}`"
+                          :aria-pressed="(i === avis.note).toString()">★</button>
+                </template>
+              </div>
+              <p x-show="avis.erreurs.note" class="text-red-600 text-xs mt-1" x-text="avis.erreurs.note" role="alert"></p>
+            </div>
+
+            <!-- Commentaire -->
+            <div>
+              <label for="avis-commentaire" class="block text-sm font-semibold text-nuit mb-1.5">
+                Commentaire <span class="text-rouille" aria-hidden="true">*</span>
+              </label>
+              <textarea id="avis-commentaire" rows="4"
+                        x-model="avis.commentaire"
+                        :class="avis.erreurs.commentaire ? 'error' : ''"
+                        class="field resize-none"
+                        placeholder="Partagez votre expérience…"
+                        required maxlength="500"
+                        aria-describedby="avis-commentaire-err avis-compteur"
+                        :aria-invalid="!!avis.erreurs.commentaire"></textarea>
+              <div class="flex justify-between mt-1">
+                <p id="avis-commentaire-err" x-show="avis.erreurs.commentaire" class="text-red-600 text-xs" x-text="avis.erreurs.commentaire" role="alert"></p>
+                <p id="avis-compteur" class="text-xs text-nuit/30 ml-auto" x-text="avis.commentaire.length + '/500'"></p>
+              </div>
+            </div>
+
+            <div x-show="avis.erreur" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-sm" role="alert" x-text="avis.erreur"></div>
+
+            <button type="submit" :disabled="avis.chargement"
+                    class="w-full bg-rouille text-white font-bold py-3.5 rounded-sm hover:bg-rouille/80 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-rouille focus:ring-offset-2">
+              <span class="spinner" x-show="avis.chargement" aria-hidden="true"></span>
+              <span x-text="avis.chargement ? 'Envoi…' : 'Envoyer mon avis'"></span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </template>
   </div>
 
   <!-- TOAST -->
@@ -824,38 +828,40 @@
           this.modales.modification = true;
         },
 
-        async soumettreModification() {
-          this.modification.chargement = true;
+        async soumettreAnnulation() {
+          this.annulation.chargement = true;
+          this.annulation.erreur = null;
           try {
             /*
-             * PUT /api/commandes/:numero/modifier
-             * Body : { adresse_livraison, date_prestation, heure_livraison, nombre_personnes }
-             * Réponse 200 : commande mise à jour
-             */
-            const res = await fetch(`${API_BASE}/commandes/${this.cmdEnCours.numero_commande}/modifier`, {
-              method:'PUT', credentials:'include',
-              headers:{'Content-Type':'application/json','Accept':'application/json'},
-              body: JSON.stringify({
-                adresse_livraison: this.cmdEnCours.adresse_livraison,
-                date_prestation:   this.cmdEnCours.date_prestation,
-                heure_livraison:   this.cmdEnCours.heure_livraison,
-                nombre_personnes:  this.cmdEnCours.nombre_personnes,
-              }),
+            * DELETE /api/commandes/:numero
+            * Réponse 200 : { message: "Commande annulée" }
+            */
+            const res = await fetch(`${API_BASE}/commandes/${this.cmdEnCours.numero_commande}`, {
+              method: 'DELETE',
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' },
             });
-            if (!res.ok) throw new Error();
-            // Mettre à jour la commande localement
-            const idx = this.commandes.findIndex(c => c.numero_commande === this.cmdEnCours.numero_commande);
-            if (idx !== -1) this.commandes[idx] = { ...this.commandes[idx], ...this.cmdEnCours };
-            this.modales.modification = false;
-            this.afficherToast('Commande modifiée avec succès.');
-          } catch {
-            // Mode démo : simuler la mise à jour
-            const idx = this.commandes.findIndex(c => c.numero_commande === this.cmdEnCours.numero_commande);
-            if (idx !== -1) this.commandes[idx] = { ...this.commandes[idx], ...this.cmdEnCours };
-            this.modales.modification = false;
-            this.afficherToast('Commande modifiée avec succès.');
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+              // Afficher l'erreur réelle du serveur
+              let msg = data.erreur || 'Impossible d\'annuler cette commande.';
+              if (data.details && typeof data.details === 'object') {
+                msg += ' ' + Object.values(data.details).join(' | ');
+              }
+              this.annulation.erreur = msg;
+              return;
+            }
+
+            // Succès réel : retirer la commande de la liste et fermer la modale
+            this.commandes = this.commandes.filter(c => c.numero_commande !== this.cmdEnCours.numero_commande);
+            this.modales.annulation = false;
+            this.afficherToast('Commande annulée.');
+          } catch (e) {
+            this.annulation.erreur = 'Erreur réseau : ' + e.message;
           } finally {
-            this.modification.chargement = false;
+            this.annulation.chargement = false;
           }
         },
 
@@ -902,32 +908,51 @@
           this.avis.erreurs = {};
           if (!this.avis.note)         { this.avis.erreurs.note        = 'Choisissez une note.'; return; }
           if (!this.avis.commentaire.trim()) { this.avis.erreurs.commentaire = 'Le commentaire est obligatoire.'; return; }
-
+          // AJOUTER cette vérification
+          if (this.avis.commentaire.trim().length < 10) {
+            this.avis.erreurs.commentaire = 'Le commentaire doit contenir au moins 10 caractères.';
+            return;
+          }
           this.avis.chargement = true;
           this.avis.erreur = null;
           try {
-            /*
-             * POST /api/commandes/:numero/avis
-             * Body : { note, commentaire }
-             * Réponse 201 : { message: "Avis enregistré" }
-             */
-            const res = await fetch(`${API_BASE}/commandes/${this.cmdEnCours.numero_commande}/avis`, {
-              method:'POST', credentials:'include',
+           /*
+          * POST /api/avis
+          * Body : { numeroCommande, note, commentaire }
+          * Réponse 201 : { message: "...", avis: {...} }
+          */
+            const res = await fetch(`${API_BASE}/avis`, {
+              method:'POST',
+              credentials:'include',
               headers:{'Content-Type':'application/json','Accept':'application/json'},
-              body: JSON.stringify({ note:this.avis.note, commentaire:this.avis.commentaire }),
+              body: JSON.stringify({
+                numeroCommande: this.cmdEnCours.numero_commande,
+                note: this.avis.note,
+                commentaire: this.avis.commentaire
+              }),
             });
-            if (!res.ok) throw new Error('Impossible d\'envoyer votre avis.');
-            const idx = this.commandes.findIndex(c => c.numero_commande === this.cmdEnCours.numero_commande);
-            if (idx !== -1) this.commandes[idx].avis_donne = true;
-            this.avis.succes = true;
-          } catch {
-            // Mode démo
-            const idx = this.commandes.findIndex(c => c.numero_commande === this.cmdEnCours.numero_commande);
-            if (idx !== -1) this.commandes[idx].avis_donne = true;
-            this.avis.succes = true;
-          } finally {
-            this.avis.chargement = false;
-          }
+
+            const data = await res.json().catch(()=>({}));
+
+              if (!res.ok) {
+                // Afficher l'erreur réelle du serveur
+                let msg = data.erreur || 'Impossible d\'envoyer votre avis.';
+                if (data.details && typeof data.details === 'object') {
+                  msg += ' ' + Object.values(data.details).join(' | ');
+                }
+                this.avis.erreur = msg;
+                return;
+              }
+               // Succès réel : marquer la commande comme ayant un avis
+                const idx = this.commandes.findIndex(c => c.numero_commande === this.cmdEnCours.numero_commande);
+                if (idx !== -1) this.commandes[idx].avis_donne = true;
+                this.avis.succes = true;
+           } catch (e) {
+              this.avis.erreur = 'Erreur réseau : ' + e.message;
+           } finally {
+              this.avis.chargement = false;
+           } 
+          
         },
 
         // ── Déconnexion ───────────────────────────────────────
