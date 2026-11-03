@@ -433,19 +433,48 @@
       return {
         menuOpen: false,
 
-        // Horaires pied de page
-        horaires: [
-          { jour: 'Lundi',    heure: '08h00 – 19h00' },
-          { jour: 'Mardi',    heure: '08h00 – 19h00' },
-          { jour: 'Mercredi', heure: '08h00 – 19h00' },
-          { jour: 'Jeudi',    heure: '08h00 – 19h00' },
-          { jour: 'Vendredi', heure: '08h00 – 20h00' },
-          { jour: 'Samedi',   heure: '09h00 – 18h00' },
-          { jour: 'Dimanche', heure: 'Fermé' },
-        ],
+        horaires: [],
+
+        // ─────────────────────────────────────────────────────────────
+        // Chargement des horaires depuis l'API publique
+        // Format API : [{ jour, ordre_jour, heure_ouverture, heure_fermeture, ferme }]
+        // L'API retourne les jours triés par ordre_jour, pas de tri à faire côté front
+        // ─────────────────────────────────────────────────────────────
+        async chargerHoraires() {
+          try {
+            const res = await fetch(`/api/horaires`, {
+              headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status}`);
+            }
+            const data = await res.json();
+            // Normalisation en {jour, heure} pour matcher le template Twig <template x-for="h in horaires">
+            // Format d'affichage : "08h00 – 19h00" (tirets cadratins + h) ou "Fermé"
+            this.horaires = data.map(h => ({
+              jour: h.jour,
+              heure: h.ferme
+                ? 'Fermé'
+                : `${this.formaterHeure(h.heure_ouverture)} – ${this.formaterHeure(h.heure_fermeture)}`
+            }));
+          } catch (e) {
+            // Fallback silencieux : le pied de page restera vide, pas de crash
+            // (on log en console pour debug, mais pas d'alerte utilisateur)
+            console.warn('Horaires indisponibles :', e);
+            this.horaires = [];
+          }
+        },
+
+        // Transforme "08:00" en "08h00" (format français)
+        formaterHeure(h) {
+          if (!h) return '';
+          return h.replace(':', 'h');
+        },
 
         init() {
           this.initReveal();
+          this.chargerHoraires();
+
         },
 
         // Révélation au scroll via IntersectionObserver

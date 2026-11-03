@@ -190,12 +190,10 @@
           <div class="kpi-card">
             <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Commandes totales</p>
             <p class="font-display text-3xl font-black text-nuit" x-text="stats.totalCommandes"></p>
-            <span class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded kpi-delta-pos">+12% ce mois</span>
           </div>
           <div class="kpi-card">
             <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Chiffre d'affaires</p>
             <p class="font-display text-3xl font-black text-nuit" x-text="formatPrix(stats.chiffreAffaires)"></p>
-            <span class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded kpi-delta-pos">+8% ce mois</span>
           </div>
           <div class="kpi-card">
             <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">En attente</p>
@@ -1008,7 +1006,21 @@
         cmdEnCours: null,
 
         // Formulaires
-        menuForm:     { menu_id:null, titre:'', description:'', theme:'', regime:'', nombre_personne_minimum:4, prix_par_personne:0, quantite_restante:null, conditions:'', chargement:false },
+        menuForm: {
+          menu_id: null,
+          titre: '',
+          description: '',
+          theme: '',
+          regime: '',
+          nombre_personne_minimum: 4,
+          prix_par_personne: 0,
+          quantite_restante: null,
+          conditions: '',
+          themeIds: [],
+          regimeIds: [],
+          platIds: [],
+          chargement: false,
+        },
         menuFormErr:  {},
         employeForm:  { prenom:'', nom:'', email:'', motDePasse:'', chargement:false, succes:false },
         employeFormErr:{},
@@ -1407,28 +1419,112 @@
         async chargerAvis() {
           try {
             /*
-             * GET /api/admin/avis?statut=en_attente
-             * Réponse : [{ avis_id, note, commentaire, auteur_prenom, auteur_nom, menu_titre, date }]
-             */
-            const res = await fetch(`${API_BASE}/admin/avis?statut=en_attente`, { credentials:'include', headers:{'Accept':'application/json'} });
-            if (!res.ok) throw new Error();
-            this.avisEnAttente = await res.json();
-          } catch {
-            this.avisEnAttente = demoAvis();
+            * Avis EN ATTENTE : pour la section de modération
+            * GET /api/admin/avis?statut=en_attente
+            */
+            const resEnAttente = await fetch(`${API_BASE}/admin/avis?statut=en_attente`, {
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' },
+            });
+            if (!resEnAttente.ok) throw new Error('Erreur chargement avis en attente');
+            this.avisEnAttente = await resEnAttente.json();
+          } catch (e) {
+            // En cas d'erreur, on vide la liste plutôt que d'afficher des données bidon
+            this.avisEnAttente = [];
           }
-          this.stats.noteMoyenne = this.avisEnAttente.length ? (this.avisEnAttente.reduce((s,a)=>s+a.note,0)/this.avisEnAttente.length).toFixed(1) : '—';
-          this.stats.totalAvis = this.avisEnAttente.length;
+
+          try {
+            /*
+            * Avis VALIDÉS : pour les stats du tableau de bord (note moyenne, total)
+            * On utilise la route publique /api/avis qui filtre déjà sur statut=valide
+            * et renvoie les derniers avis publics (limite=100 pour avoir une base
+            * de calcul représentative).
+            */
+            const resValides = await fetch(`${API_BASE}/avis?limite=100`, {
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' },
+            });
+            if (!resValides.ok) throw new Error('Erreur chargement avis validés');
+            const avisValides = await resValides.json();
+
+            // Calcul de la note moyenne et du total à partir des avis réellement validés
+            this.stats.noteMoyenne = avisValides.length
+              ? (avisValides.reduce((s, a) => s + a.note, 0) / avisValides.length).toFixed(1)
+              : '—';
+            this.stats.totalAvis = avisValides.length;
+          } catch (e) {
+            this.stats.noteMoyenne = '—';
+            this.stats.totalAvis = 0;
+          }
         },
 
+        // ── Modération d'un avis en attente ──────────────────
+        /*
+         * Valide un avis : passe statut=en_attente → statut=valide.
+         * L'avis apparaîtra ensuite dans /api/avis (route publique)
+         * et sera comptabilisé dans la note moyenne du tableau de bord.
+         *
+         * Route API : PUT /api/admin/avis/{id}/valider
+         * Convention REST : PUT car on modifie une ressource existante
+         * (changement de statut), pas de création.
+         */
         async validerAvis(avis) {
-          try { await fetch(`${API_BASE}/admin/avis/${avis.avis_id}/valider`, { method:'PUT', credentials:'include' }); } catch {}
-          this.avisEnAttente = this.avisEnAttente.filter(a=>a.avis_id!==avis.avis_id);
-          this.afficherToast('Avis publié.');
+          try {
+            const res = await fetch(`${API_BASE}/admin/avis/${avis.avis_id}/valider`, {
+              method: 'PUT',
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' },
+            });
+            if (!res.ok) {
+              this.afficherToast('Erreur lors de la validation de l\'avis.');
+              return;
+            }
+            // Optimisation UI : on retire l'avis de la liste en attente localement
+            // au lieu de refaire un fetch complet (économie d'une requête réseau)
+            this.avisEnAttente = this.avisEnAttente.filter(a => a.avis_id !== avis.avis_id);
+            // On recharge les stats pour mettre à jour la note moyenne et le total
+            // (l'avis fraîchement validé compte maintenant dans /api/avis)
+            await this.chargerAvis();
+            this.afficherToast('Avis publié.');
+          } catch (e) {
+            this.afficherToast('Impossible de valider l\'avis.');
+          }
         },
+
+        // ── Refus d'un avis en attente ───────────────────────
+        /*
+         * Refuse un avis : passe statut=en_attente → statut=refuse.
+         * L'avis n'apparaîtra plus nulle part (ni admin, ni public)
+         * mais reste en base pour traçabilité RGPD (droit à la preuve
+         * en cas de contestation).
+         *
+         * Route API : DELETE /api/admin/avis/{id}/refuser
+         * Convention REST : DELETE pour l'intention de retirer de la
+         * modération, même si la ligne reste physiquement en base.
+         */
         async refuserAvis(avis) {
-          try { await fetch(`${API_BASE}/admin/avis/${avis.avis_id}/refuser`, { method:'DELETE', credentials:'include' }); } catch {}
-          this.avisEnAttente = this.avisEnAttente.filter(a=>a.avis_id!==avis.avis_id);
-          this.afficherToast('Avis refusé.');
+          // Confirmation navigateur : action destructive côté UX.
+          // Le client a envoyé un avis sincère, le refuser mérite une pause.
+          if (!confirm(`Refuser l'avis de ${avis.auteur_prenom} ? Cette action est définitive.`)) {
+            return;
+          }
+          try {
+            const res = await fetch(`${API_BASE}/admin/avis/${avis.avis_id}/refuser`, {
+              method: 'DELETE',
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' },
+            });
+            if (!res.ok) {
+              this.afficherToast('Erreur lors du refus de l\'avis.');
+              return;
+            }
+            // Retrait local, pas besoin de recharger les stats
+            // (un avis refusé n'affecte pas la note moyenne, qui ne compte que les validés)
+            this.avisEnAttente = this.avisEnAttente.filter(a => a.avis_id !== avis.avis_id);
+            this.afficherToast('Avis refusé.');
+          } catch (e) {
+            this.afficherToast('Impossible de refuser l\'avis.');
+          }
         },
 
         // ── Stats NoSQL (commandes par menu) ──────────────────
@@ -1451,16 +1547,63 @@
           this.caFiltre = [...this.caParMenu];
         },
 
-        recalculerCA() {
-          /* Filtre local pour la démo ; côté prod → GET /api/admin/stats/ca avec params */
-          this.caFiltre = this.caParMenu.filter(i => {
-            if (this.filtreCA.menu) {
-              const menu = this.menusListe.find(m => m.menu_id == this.filtreCA.menu);
-              if (menu && i.menu !== menu.titre) return false;
+        async recalculerCA() {
+          try {
+            /*
+            * Construction des query params : ?debut=YYYY-MM-DD&fin=YYYY-MM-DD
+            * On ne passe que les paramètres définis par l'utilisateur ;
+            * le backend applique ses valeurs par défaut (toute la période) sinon.
+            */
+            const params = new URLSearchParams();
+            if (this.filtreCA.debut) params.set('debut', this.filtreCA.debut);
+            if (this.filtreCA.fin)   params.set('fin',   this.filtreCA.fin);
+
+            /*
+            * GET /api/admin/stats/chiffre-affaires?debut=...&fin=...
+            * Réponse : [{ menu: "Menu de Noël Prestige", ca: 1830.50, count: 42 }, ...]
+            *
+            * Note : le backend ajoute automatiquement setTime(23, 59, 59) sur
+            * la date de fin pour inclure toute la journée (sinon un filtre jusqu'au
+            * 2025-12-31 s'arrêterait à minuit et oublierait les commandes du 31).
+            */
+            const queryString = params.toString();
+            const url = `${API_BASE}/admin/stats/chiffre-affaires${queryString ? '?' + queryString : ''}`;
+
+            const res = await fetch(url, {
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' },
+            });
+
+            if (!res.ok) {
+              // On affiche une vraie erreur plutôt qu'un fallback mensonger
+              this.afficherToast('Erreur de chargement du chiffre d\'affaires.');
+              return;
             }
-            return true;
-          });
-          if (!this.caFiltre.length) this.caFiltre = [...this.caParMenu];
+
+            const data = await res.json();
+
+            /*
+            * Le filtre par menu est appliqué côté client (le backend ne gère pas
+            * encore ce filtre). On trouve le titre du menu correspondant à l'id
+            * sélectionné dans this.filtreCA.menu, puis on filtre par titre.
+            */
+            if (this.filtreCA.menu) {
+              const menuSelectionne = this.menusListe.find(m => m.menu_id == this.filtreCA.menu);
+              this.caFiltre = menuSelectionne
+                ? data.filter(i => i.menu === menuSelectionne.titre)
+                : data;
+
+              // Si le filtre ne retourne rien, on affiche toutes les données
+              if (!this.caFiltre.length) {
+                this.caFiltre = data;
+              }
+            } else {
+              // Aucun filtre menu : on affiche tous les menus
+              this.caFiltre = data;
+            }
+          } catch (e) {
+            this.afficherToast('Impossible de contacter le serveur pour le chiffre d\'affaires.');
+          }
         },
 
         // ── Changement de statut ──────────────────────────────

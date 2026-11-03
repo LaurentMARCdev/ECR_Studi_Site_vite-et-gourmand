@@ -53,7 +53,7 @@ class HoraireController extends AbstractController
      *
      * Body : tableau des 7 jours avec leurs horaires
      * [
-     *   { horaire_id: 1, ferme: false, heureOuverture: "08:00", heureFermeture: "19:00" },
+     *   { horaire_id: 1, ferme: false, heure_ouverture: "08:00", heure_fermeture: "19:00" },
      *   { horaire_id: 7, ferme: true },
      *   ...
      * ]
